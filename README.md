@@ -162,15 +162,11 @@ startup; restart after editing.
 | `HidePrompt` | `true` | Fade the prompt ring while a scene is skipped. Set `false` if a HUD mod also manages that widget. |
 | `ToggleKey` / `DiagnoseKey` | `F4` / `F5` | UE4SS key names. Empty binds nothing. |
 | `BlockAlso` | *(empty)* | Extra scenes to leave alone, comma separated. |
-| `UnblockScenes` | *(empty)* | Shipped entries to release, comma separated. Exact pattern; every release is logged. |
 | `Verbose` | `false` | Also write `AutoQTE.log` beside `main.lua`. |
 | `LogEveryCompletion` | `false` | One line per prompt. Noisy; for diagnosing one scene. |
 
-The list is a judgement call, not a rule the game exposes — so the ini adjusts
-it **in both directions** and you never have to edit Lua. `UnblockScenes` needs
-the *exact* shipped pattern, so a near miss releases nothing rather than
-something unintended, and each release is written to the log as
-`UNBLOCKED by ini: <pattern>`.
+Nothing is blocked unless you put it in `BlockAlso`, so the list lives entirely
+in your ini and never has to be edited in Lua.
 
 Press the diagnose key during any scene to see its identity string in the log;
 any distinctive lowercase fragment of that works as a pattern.

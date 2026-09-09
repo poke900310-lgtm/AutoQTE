@@ -181,7 +181,7 @@ end
 
 io.write("== V5  every blocklist pattern blocks its scene\n")
 -- One case per pattern. Deleting or corrupting any entry turns this red.
-local PATTERNS = { "vasylflogging", "feedingesme", "forcefeed", "liftingbeam",
+local PATTERNS = { "vasylflogging", "feedingesme", "forcefeed",
                    "anca_wounds", "patching_marat", "endurance_trial", "breakritual",
                    "eating_mandrake", "takerabbit", "destroying_skates", "filling_grave",
                    "ringingbells", "gettingkey", "hookingworm" }
@@ -340,12 +340,21 @@ do  -- BlockAlso adds patterns
         "completed=" .. a.completed)
   check("and says which pattern matched", logged("BLOCKED (woodchopping)") ~= nil)
 end
-do  -- the ini must not be able to UNBLOCK a story scene
-  INI = "BlockedScenes =\nvasylflogging = false\nUnblockScenes = vasylflogging\n"; fresh()
-  local a = scene{ seqName = "InteractiveSceneLevelSequence /Game/Q/DIS/LS_vasylflogging_DIS" }
+do  -- UnblockScenes, with the exact shipped pattern
+  INI = "UnblockScenes = takerabbit\n"; fresh()
+  local a = scene{ seqName = "InteractiveSceneLevelSequence /Game/Q/DIS/LS_takerabbit_DIS" }
   hooks[START](a)
-  check("a story scene cannot be unblocked from the ini", a.completed == 0,
-        "completed=" .. a.completed)
+  check("UnblockScenes releases the named scene", a.completed == 1, "completed=" .. a.completed)
+  check("and says so loudly in the log", logged("UNBLOCKED by ini: takerabbit") ~= nil)
+end
+do  -- a near miss must drop through, not unblock something by accident
+  INI = "UnblockScenes = takerabit, vasyl, VASYLFLOGGING_X\n"; fresh()
+  local a = scene{ seqName = "InteractiveSceneLevelSequence /Game/Q/DIS/LS_takerabbit_DIS" }
+  hooks[START](a)
+  check("a misspelt pattern unblocks nothing", a.completed == 0, "completed=" .. a.completed)
+  local b = scene{ seqName = "InteractiveSceneLevelSequence /Game/Q/DIS/LS_vasylflogging_DIS" }
+  hooks[START](b)
+  check("a partial pattern unblocks nothing either", b.completed == 0, "completed=" .. b.completed)
 end
 do  -- keys come from the ini
   INI = "ToggleKey = F7\nDiagnoseKey =\n"; fresh()

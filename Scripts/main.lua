@@ -28,9 +28,6 @@ local Config = {
                              -- oatmeal_throw audio, Face_Pain_idle
         "forcefeed",         -- 2 scenes; SM_BowlWithPoison, Coen+Julian,
                              -- audio ForceFeed_A_* and _B_* variants
-        "liftingbeam",       -- "Lift Plank"; binds Character.Secondary.
-                             -- q001_Ludwig survivor anim AND SM_Ludvig_Corpse
-                             -- on independent spawn tracks = live/dead outcome
 
         -- ---- medical / bodily ----
         "anca_wounds",       -- 3 scenes (A/B/C); "Touch Anca"/"Anca One"/
@@ -121,8 +118,9 @@ end
 -- Settings live in AutoQTE.ini beside this script, so a mod update cannot
 -- overwrite them. AutoQTE.defaults.ini ships as the reference copy and IS
 -- replaced on update. Anything absent or unreadable keeps the value above.
--- The list can only be ADDED to from the ini: a typo must never unblock a
--- story scene. Removing an entry is still a deliberate edit of this file.
+-- The ini can add to the list and remove from it. Removal needs the exact
+-- shipped pattern, so a typo drops through harmlessly instead of unblocking
+-- something by accident, and every removal is logged.
 local INI_FILES = { "AutoQTE.ini", "AutoQTE.defaults.ini" }
 
 local function iniBody()
@@ -160,6 +158,17 @@ local function applyIni()
                 elseif key == "logeverycompletion" and b ~= nil then Config.LogEveryCompletion = b;   set = set + 1
                 elseif key == "togglekey"          then Config.Keys.Toggle = v;                       set = set + 1
                 elseif key == "diagnosekey"        then Config.Keys.Diagnose = v;                     set = set + 1
+                elseif key == "unblockscenes"      then
+                    for pat in v:gmatch("[^,]+") do
+                        pat = pat:match("^%s*(.-)%s*$"):lower()
+                        for i = #Config.BlockedScenes, 1, -1 do
+                            if Config.BlockedScenes[i] == pat then
+                                table.remove(Config.BlockedScenes, i)
+                                log("UNBLOCKED by ini: %s - that scene will now be auto-completed", pat)
+                                set = set + 1
+                            end
+                        end
+                    end
                 elseif key == "blockalso"          then
                     for pat in v:gmatch("[^,]+") do
                         pat = pat:match("^%s*(.-)%s*$"):lower()

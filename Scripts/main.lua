@@ -56,7 +56,6 @@ local Config = {
         "gettingkey",        -- sq710 "faux DIS trap" quest. The sequence is a
                              -- placeholder, but the trap payload lives beside
                              -- it (hand_in_hole anims, _alter dialogue takes).
-        "hookingworm",       -- "Hook Worm"; borderline chore, kept for safety
     },
 
     -- Evaluated and deliberately NOT implemented, each for a validated reason:

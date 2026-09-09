@@ -125,7 +125,7 @@ someone, feeding someone, breaking something, performing a ritual on yourself.
 Automating those takes the decision away from you, and can quietly change what a
 scene means or which of two outcomes you get.
 
-So AutoQTE ships with **14 blocklist entries covering 19 of the game's 59 DIS
+So AutoQTE ships with **13 blocklist entries covering 18 of the game's 59 DIS
 scenes**. Blocked scenes are left completely untouched: the prompt
 appears, the timer runs, and you play it. The log records
 `BLOCKED (<entry>) - left to the player` when one comes up.
@@ -140,7 +140,7 @@ The current list, grouped by why:
 - **Destructive or irreversible acts** — `takerabbit`, `destroying_skates`,
   `filling_grave`.
 - **Conservative — no in-scene consequence found, kept anyway** —
-  `ringingbells`, `gettingkey`, `hookingworm`.
+  `ringingbells`, `gettingkey`.
 
 Entries are matched as **lowercase substrings** against the scene actor's full
 name joined with its level sequence's full name. Each entry was checked against

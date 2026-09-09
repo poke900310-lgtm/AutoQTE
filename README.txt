@@ -78,6 +78,10 @@ MANUAL
 
         ...\ue4ss\Mods\AutoQTE\enabled.txt
         ...\ue4ss\Mods\AutoQTE\Scripts\main.lua
+        ...\ue4ss\Mods\AutoQTE\Scripts\AutoQTE.defaults.ini
+
+    Copy AutoQTE.defaults.ini to AutoQTE.ini beside it if you want to change
+    a setting. The mod runs fine without it.
 
     That is the whole mod. Do not copy README.txt or LICENSE.txt into the game
     folder - they are documentation only.
@@ -88,7 +92,8 @@ shipping a mods.txt would overwrite your load order.
 
 UNINSTALL
     Remove it in Vortex and deploy, or delete the Mods\AutoQTE folder. That
-    removes the mod and its log entirely. Nothing else is left behind.
+    removes the mod, its settings and its log entirely. Nothing else is
+    left behind - AutoQTE writes no file outside its own folder.
 
 
 --------------------------------------------------------------------------------

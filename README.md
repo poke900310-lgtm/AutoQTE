@@ -354,6 +354,63 @@ Re-check in this order before trusting the mod on a new build:
 6. If the patch added quests or scenes, re-derive the DIS scene list and re-audit
    the blocklist rather than assuming the old 59 still hold.
 
+## Development
+
+The mod is a single file: `Scripts/main.lua`. There is nothing to compile.
+
+```
+Scripts/main.lua              the mod
+enabled.txt                   zero-byte marker UE4SS looks for
+README.txt / LICENSE.txt      shipped at the archive root
+tests/autoqte_regression.lua  regression suite
+tests/mutants.py              proves the suite can actually fail
+tools/build.py                assembles dist/AutoQTE.zip
+```
+
+Run the suite against any copy of the mod — a working tree, or the file in a
+live install:
+
+```
+lua54.exe tests/autoqte_regression.lua Scripts/main.lua
+```
+
+It stubs the UE4SS globals, including the truthy-phantom behaviour for members
+that do not exist, and asserts only on observables: whether
+`CompleteCurrentPrompt` was called, on what, what was logged, and what opacity
+the prompt widget was left at.
+
+A green suite means nothing on its own, so every assertion is mutation-tested:
+
+```
+python tests/mutants.py <path to lua54.exe>
+```
+
+Each mutant breaks one behaviour and the suite must go red. Any `SURVIVED` line
+is a hole. One known survivor is documented in that script and deliberately
+excluded — `getScalar`'s type filter is guarded again by every caller, so
+removing it changes no observable.
+
+To check whether another mod can conflict, point this at its release archive
+or its `package/` directory — not a source checkout, since mod repos often
+vendor a copy of another mod:
+
+```
+python tools/check_conflict.py <mod.zip>
+```
+
+It reports whether the mod hooks the DIS system, writes the prompt widget,
+binds F4/F5, or ships a shared UE4SS file. Those are the only four ways
+anything can collide with AutoQTE; everything else is compatible at any load
+order.
+
+To build the release archive:
+
+```
+python tools/build.py
+```
+
+It refuses to package a file with `Verbose` or `LogEveryCompletion` left on.
+
 ## Credits and licence
 
 AutoQTE is original work. It contains no code from another mod or project, and

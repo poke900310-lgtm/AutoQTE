@@ -19,6 +19,7 @@ OUT = os.path.join(ROOT, "dist", "AutoQTE.zip")
 ENTRIES = [
     ("Data/AutoQTE/enabled.txt",      "enabled.txt"),
     ("Data/AutoQTE/Scripts/main.lua", "Scripts/main.lua"),
+    ("Data/AutoQTE/Scripts/AutoQTE.defaults.ini", "AutoQTE.defaults.ini"),
     ("README.txt",                    "README.txt"),
     ("LICENSE.txt",                   "LICENSE.txt"),
 ]

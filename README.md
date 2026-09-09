@@ -148,8 +148,27 @@ only its intended scenes.
 
 ## Configuration
 
-Everything is at the top of `Scripts\main.lua`. Edit it in any text editor and
-restart the game. Two knobs are worth touching; the rest can be left alone.
+Settings live in **`AutoQTE.ini`**, beside `main.lua` in the `Scripts` folder.
+
+`AutoQTE.defaults.ini` ships as a commented reference and **is replaced on
+update**. Copy it to `AutoQTE.ini` and edit that — `AutoQTE.ini` is never
+shipped and never overwritten, so your settings survive a mod update. If
+neither file exists, the built-in defaults apply. Settings are read once at
+startup; restart after editing.
+
+| Setting | Default | Effect |
+|---|---|---|
+| `Enabled` | `true` | Master switch; the toggle key flips it in game. |
+| `HidePrompt` | `true` | Fade the prompt ring while a scene is skipped. Set `false` if a HUD mod also manages that widget. |
+| `ToggleKey` / `DiagnoseKey` | `F4` / `F5` | UE4SS key names. Empty binds nothing. |
+| `BlockAlso` | *(empty)* | Extra scenes to leave alone, comma separated. **Add-only** — see below. |
+| `Verbose` | `false` | Also write `AutoQTE.log` beside `main.lua`. |
+| `LogEveryCompletion` | `false` | One line per prompt. Noisy; for diagnosing one scene. |
+
+`BlockAlso` can only **add** to the blocklist. A story scene cannot be
+unblocked from the ini, deliberately: a typo in a config file must never
+auto-complete something that matters. Removing a shipped entry is still a
+deliberate edit of `BlockedScenes` in `Scripts\main.lua`.
 
 ### `BlockedScenes`
 

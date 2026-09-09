@@ -20,7 +20,18 @@ local target = ...
 local out, faults, viewport = {}, 0, {}
 local FAIL_OPACITY = false
 print = function(s) out[#out+1] = tostring(s):gsub("\n$","") end
-io.open = function() return {write=function() end, flush=function() end, close=function() end} end
+INI = nil   -- per-test AutoQTE.ini contents, or nil for "no file"
+io.open = function(path, mode)
+    if mode == "r" then
+        if INI and tostring(path):find("AutoQTE.ini", 1, true) then
+            local done = false
+            return { read = function() if done then return nil end done = true; return INI end,
+                     close = function() end }
+        end
+        return nil
+    end
+    return { write = function() end, flush = function() end, close = function() end }
+end
 
 local PHANTOM = setmetatable({}, {__tostring = function() return "<phantom>" end})
 local nextAddr = 0x1000
@@ -298,6 +309,63 @@ do  -- the widget was already faded by someone else before we hid it
   hooks[START](a)
   hooks[DONE](a)
   check("a pre-existing value is put back, not 1.0", w.opacity == 0.4, "opacity=" .. tostring(w.opacity))
+end
+
+io.write("== V12  AutoQTE.ini\n")
+do  -- no ini at all: built-in defaults stand
+  INI = nil; fresh()
+  local a, w = scene()
+  hooks[START](a)
+  check("no ini -> defaults still work", a.completed == 1 and w.opacity == 0.0,
+        "completed=" .. a.completed .. " opacity=" .. tostring(w.opacity))
+end
+do  -- Enabled = false
+  INI = "Enabled = false\n"; fresh()
+  local a = scene()
+  hooks[START](a)
+  check("Enabled=false is honoured", a.completed == 0, "completed=" .. a.completed)
+end
+do  -- HidePrompt = false
+  INI = "HidePrompt = no\n"; fresh()
+  local a, w = scene()
+  hooks[START](a)
+  check("HidePrompt=no is honoured", a.completed == 1 and w.opacity == 1.0,
+        "opacity=" .. tostring(w.opacity))
+end
+do  -- BlockAlso adds patterns
+  INI = "; a comment\n[Section]\nBlockAlso = woodchopping , SomeOtherScene\n"; fresh()
+  local a = scene()
+  hooks[START](a)
+  check("BlockAlso blocks a scene the shipped list allows", a.completed == 0,
+        "completed=" .. a.completed)
+  check("and says which pattern matched", logged("BLOCKED (woodchopping)") ~= nil)
+end
+do  -- the ini must not be able to UNBLOCK a story scene
+  INI = "BlockedScenes =\nvasylflogging = false\nUnblockScenes = vasylflogging\n"; fresh()
+  local a = scene{ seqName = "InteractiveSceneLevelSequence /Game/Q/DIS/LS_vasylflogging_DIS" }
+  hooks[START](a)
+  check("a story scene cannot be unblocked from the ini", a.completed == 0,
+        "completed=" .. a.completed)
+end
+do  -- keys come from the ini
+  INI = "ToggleKey = F7\nDiagnoseKey =\n"; fresh()
+  check("ToggleKey=F7 binds F7", binds.F7 ~= nil)
+  check("and not the default F4", binds.F4 == nil)
+  check("an empty DiagnoseKey binds nothing", binds.F5 == nil)
+end
+do  -- junk must not break anything
+  INI = "!!! garbage\n= = =\nEnabled\nNoSuchSetting = 12\nEnabled = true\n\n\n"; fresh()
+  local a = scene()
+  hooks[START](a)
+  check("a malformed ini still loads and works", a.completed == 1, "completed=" .. a.completed)
+  check("and reports the lines it could not read", logged("not understood") ~= nil)
+end
+do  -- the blocklist survives a hostile ini
+  INI = "BlockAlso =\nBlockAlso = ,,,\n"; fresh()
+  local a = scene{ seqName = "InteractiveSceneLevelSequence /Game/Q/DIS/LS_takerabbit_DIS" }
+  hooks[START](a)
+  check("shipped blocklist intact after an empty BlockAlso", a.completed == 0,
+        "completed=" .. a.completed)
 end
 
 io.write(string.format("\n%d passed, %d failed\n", pass, fail))

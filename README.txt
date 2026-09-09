@@ -118,7 +118,28 @@ a different name and reload.
 SETTINGS
 --------------------------------------------------------------------------------
 
-All settings are in the Config table at the top of main.lua.
+Settings live in AutoQTE.ini, beside main.lua in the Scripts folder.
+
+AutoQTE.defaults.ini ships as a commented reference and IS replaced whenever
+you update the mod. Copy it to AutoQTE.ini and edit that instead - AutoQTE.ini
+is never shipped and never overwritten, so your settings survive updates.
+If neither file exists the built-in defaults are used.
+
+Settings are read once at startup. Restart the game after editing.
+
+  Enabled              Master switch. The toggle key flips it in game.
+  HidePrompt           Fade the prompt ring while a scene is skipped.
+  ToggleKey            Default "F4". Empty binds nothing.
+  DiagnoseKey          Default "F5". Empty binds nothing.
+  BlockAlso            Extra scenes to leave alone, comma separated. This can
+                       only ADD - a story scene cannot be unblocked from the
+                       ini, so a typo can never auto-complete one. To remove a
+                       shipped entry, edit BlockedScenes in main.lua.
+  Verbose              Also write AutoQTE.log beside main.lua.
+  LogEveryCompletion   One line per prompt. Noisy; for diagnosing one scene.
+
+The same values also appear in the Config table at the top of main.lua, which
+is what the ini overrides.
 
   DIS.Enabled          Master switch for the auto-resolve behaviour.
 

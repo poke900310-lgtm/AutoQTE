@@ -118,6 +118,66 @@ local function log(fmt, ...)
     end
 end
 
+-- Settings live in AutoQTE.ini beside this script, so a mod update cannot
+-- overwrite them. AutoQTE.defaults.ini ships as the reference copy and IS
+-- replaced on update. Anything absent or unreadable keeps the value above.
+-- The list can only be ADDED to from the ini: a typo must never unblock a
+-- story scene. Removing an entry is still a deliberate edit of this file.
+local INI_FILES = { "AutoQTE.ini", "AutoQTE.defaults.ini" }
+
+local function iniBody()
+    local dir = LOG:sub(1, #LOG - #("AutoQTE.log"))
+    for _, name in ipairs(INI_FILES) do
+        local okf, f = pcall(io.open, dir .. name, "r")
+        if okf and f then
+            local ok, body = pcall(function() return f:read("a") end)
+            pcall(function() f:close() end)
+            if ok and type(body) == "string" and body ~= "" then return body, name end
+        end
+    end
+end
+
+local function toBool(v)
+    v = v:lower()
+    if v == "true"  or v == "1" or v == "yes" or v == "on"  then return true  end
+    if v == "false" or v == "0" or v == "no"  or v == "off" then return false end
+    return nil
+end
+
+local function applyIni()
+    local body, name = iniBody()
+    if not body then return end
+    local set, bad = 0, 0
+    for line in body:gmatch("[^\r\n]+") do
+        if not line:match("^%s*[;#%[]") then
+            local k, v = line:match("^%s*([%w_]+)%s*=%s*(.-)%s*$")
+            if k then
+                local key, b = k:lower(), nil
+                if v ~= "" then b = toBool(v) end
+                if     key == "enabled"            and b ~= nil then Config.Enabled = b;              set = set + 1
+                elseif key == "hideprompt"         and b ~= nil then Config.DIS.HidePrompt = b;       set = set + 1
+                elseif key == "verbose"            and b ~= nil then Config.Verbose = b;              set = set + 1
+                elseif key == "logeverycompletion" and b ~= nil then Config.LogEveryCompletion = b;   set = set + 1
+                elseif key == "togglekey"          then Config.Keys.Toggle = v;                       set = set + 1
+                elseif key == "diagnosekey"        then Config.Keys.Diagnose = v;                     set = set + 1
+                elseif key == "blockalso"          then
+                    for pat in v:gmatch("[^,]+") do
+                        pat = pat:match("^%s*(.-)%s*$"):lower()
+                        if pat ~= "" then
+                            Config.BlockedScenes[#Config.BlockedScenes + 1] = pat
+                            set = set + 1
+                        end
+                    end
+                else bad = bad + 1 end
+            end
+        end
+    end
+    log("%s: %d setting(s) applied%s", name, set,
+        bad > 0 and (", " .. bad .. " line(s) not understood") or "")
+end
+
+pcall(applyIni)
+
 local function isAlive(obj)
     if not obj then return false end
     local ok, v = pcall(function() return obj:IsValid() end)
@@ -455,4 +515,4 @@ end)
 end
 
 log("")
-log("AutoQTE v%s loaded (%d patterns / 20 scenes blocked)", VERSION, #Config.BlockedScenes)
+log("AutoQTE v%s loaded (%d blocklist patterns)", VERSION, #Config.BlockedScenes)

@@ -1,0 +1,21 @@
+# Normalise on commit, check out LF everywhere so a build is byte-reproducible
+# on any machine. The mod ships as plain text and UE4SS reads LF fine.
+* text=auto eol=lf
+
+*.lua   text eol=lf
+*.py    text eol=lf
+*.md    text eol=lf
+*.txt   text eol=lf
+
+# enabled.txt is a zero-byte marker; never let anything rewrite it
+enabled.txt -text
+
+*.zip    binary
+*.uasset binary
+*.uexp   binary
+*.pak    binary
+*.dll    binary
+*.exe    binary
+
+# Keep diffs of the mod source readable
+*.lua diff

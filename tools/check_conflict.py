@@ -32,6 +32,13 @@ HOOKS = ("InteractiveSceneObject", "DISLevelSequenceDirector",
 HOOK_RE = re.compile(r"(?<![A-Za-z])BP_DIS(?![A-Za-z])")
 WIDGET = ("WBP_DIS_Prompt_New", "SetRenderOpacity")
 SHARED = ("mods.txt", "ue4ss-settings.ini", "dwmapi.dll", "ue4ss.dll")
+# A DIS scene is played by a LevelSequencePlayer, so anything that watches every
+# sequence player is operating on the same object AutoQTE's target runs on.
+SEQUENCE = ("LevelSequencePlayer", "MovieSceneSequencePlayer", "SetPlayRate",
+            "LevelSequenceActor", "MovieSceneTimeWarp")
+# Second injector: a proxy DLL sitting beside the game exe, next to UE4SS's own.
+PROXY = ("version.dll", "winmm.dll", "dinput8.dll", "dsound.dll", "d3d11.dll",
+         "d3d12.dll", "xinput1_3.dll", "xinput1_4.dll", "bink2w64.dll")
 OURKEYS = ("F4", "F5")
 TEXT_EXT = (".lua", ".ini", ".txt", ".json", ".cfg")
 
@@ -59,6 +66,7 @@ def check(target):
     print("=" * 72)
 
     hooks, widget, keys, shared, kinds = set(), set(), set(), set(), {}
+    seq, proxy, sharedlib = set(), set(), set()
     for member, data in read_members(target):
         low = member.lower()
         ext = os.path.splitext(low)[1]
@@ -66,6 +74,11 @@ def check(target):
         for s in SHARED:
             if low.endswith(s):
                 shared.add(os.path.basename(member))
+        for s in PROXY:
+            if low.rsplit("/", 1)[-1] == s:
+                proxy.add(os.path.basename(member))
+        if "/mods/shared/" in "/" + low or low.startswith("mods/shared/"):
+            sharedlib.add(member.split("shared/", 1)[-1].split("/")[0])
         if ext not in TEXT_EXT:
             continue
         try:
@@ -80,6 +93,9 @@ def check(target):
         for token in WIDGET:
             if token in text:
                 widget.add(token)
+        for token in SEQUENCE:
+            if token in text:
+                seq.add(token)
         for m in re.finditer(r"Key\.([A-Z_0-9]+)", text):
             if m.group(1) in OURKEYS:
                 keys.add(m.group(1))
@@ -104,6 +120,25 @@ def check(target):
         print("      May contend for the DIS prompt widget. AutoQTE will not")
         print("      overwrite another mod's value; if the prompt is ever left")
         print("      faded, set DIS.HidePrompt = false.")
+        if verdict == "COMPATIBLE":
+            verdict = "NOTE"
+    if sharedlib:
+        print("  [!] SHIPS A SHARED LUA LIBRARY: Mods/shared/" + ", ".join(sorted(sharedlib)))
+        print("      Shared namespace. Collides only with another mod shipping a")
+        print("      different version of the same library - AutoQTE ships none.")
+        if verdict == "COMPATIBLE":
+            verdict = "NOTE"
+    if proxy:
+        print("  [!] SECOND PROXY DLL: " + ", ".join(sorted(proxy)))
+        print("      A separate injector beside UE4SS's dwmapi.dll. Different")
+        print("      filenames coexist, but two injectors is worth knowing.")
+        if verdict == "COMPATIBLE":
+            verdict = "NOTE"
+    if seq and not hooks:
+        print("  [!] TOUCHES THE SEQUENCE SYSTEM: " + ", ".join(sorted(seq)))
+        print("      A DIS scene is played by a LevelSequencePlayer, so this acts")
+        print("      on the same object AutoQTE's target runs on. Not a conflict")
+        print("      by itself; worth one play test through a skipped scene.")
         if verdict == "COMPATIBLE":
             verdict = "NOTE"
     if keys:

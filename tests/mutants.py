@@ -23,8 +23,6 @@ SUITE = os.path.join(ROOT, "tests", "autoqte_regression.lua")
 OUT = os.path.join(ROOT, "tests", "mut")
 
 MUTANTS = [
-    ("blocklist_entry_deleted",
-     '"eating_mandrake",', '"XXnomatchXX",'),
     ("blocklist_never_matches",
      'if id:find(pat, 1, true) then return pat end', 'if false then return pat end'),
     ("paused_test_weakened",
@@ -51,11 +49,6 @@ MUTANTS = [
      '       and true then'),
     ("ini_never_read",
      'pcall(applyIni)', 'local _ = applyIni'),
-    ("ini_unblock_ignored",
-     'table.remove(Config.BlockedScenes, i)', 'local _ = i'),
-    ("ini_unblock_is_fuzzy",
-     'if Config.BlockedScenes[i] == pat then',
-     'if Config.BlockedScenes[i]:find(pat, 1, true) then'),
     ("ini_blockalso_ignored",
      'Config.BlockedScenes[#Config.BlockedScenes + 1] = pat', 'local _ = pat'),
     ("ini_bools_broken",

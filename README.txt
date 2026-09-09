@@ -12,10 +12,21 @@ AutoQTE resolves them for you by calling the scene's own CompleteCurrentPrompt()
 - the exact function the game runs when you hit the prompt yourself - and fades
 the prompt ring out so the moment plays through uninterrupted.
 
-18 of the game's 59 DIS scenes are DELIBERATELY LEFT ALONE. Where the prompt is
-an act with story weight rather than a chore - harming a named NPC, medical or
-ritual scenes, destructive acts - you still perform it yourself. A scene the mod
-cannot positively identify is also left alone, on purpose.
+NOTHING IS BLOCKED BY DEFAULT, and that is a finding rather than a shortcut.
+A DIS prompt cannot be failed: the engine's scene-end type is CancelledByPlayer,
+CancelledByQuestNode or Completed - there is no Failed - and the interaction type
+is only Press, Hold or Tapping. CompleteCurrentPrompt fires OnPromptSuccess
+unconditionally. Nothing downstream can branch on how you played a prompt, so
+auto-completing a scene reaches exactly the state playing it by hand reaches.
+
+What auto-completion does take away is the chance to walk away from a scene
+instead of performing it. If you would rather make that choice yourself for the
+game's more pointed moments - harming a named NPC, medical or ritual scenes,
+destructive acts - AutoQTE.defaults.ini carries a ready-made cautious set of 13
+patterns covering 18 scenes, commented out and annotated, to paste into
+BlockAlso. Uncomment it, trim it, or ignore it.
+
+A scene the mod cannot positively identify is always left alone, on purpose.
 
 It is a Lua-only UE4SS mod: one script, no DLL, no pak, no assets. Two files.
 See CONFLICTS below for exactly what it hooks.
@@ -152,7 +163,7 @@ is what the ini overrides.
                        Default true. Purely cosmetic; the prompt is resolved
                        either way.
 
-  BlockedScenes        The safety list: 13 patterns covering 18 scenes. Each
+  BlockedScenes        Empty by default; see BlockAlso. Each
                        entry is a lowercase substring matched against the
                        scene's actor path and its level sequence path, with a
                        comment recording why that scene is on the list. Add
@@ -185,7 +196,7 @@ when you complete a prompt normally.
 Most DIS scenes are chores: the outcome is fixed by the sequence reaching its
 end, so resolving a prompt early only changes how long you wait. A few are not.
 Some prompts are an act with a consequence, and those are exactly what the
-safety list above exists for - see BLOCKED SCENES. Either way AutoQTE writes
+optional BlockAlso list is for - see SETTINGS. Either way AutoQTE writes
 only the values the game itself writes when you complete a prompt by hand, and
 it cannot corrupt a save.
 

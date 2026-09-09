@@ -13,50 +13,21 @@ local Config = {
         HidePrompt = true,
     },
 
-    -- Scenes left entirely alone: the prompt is an act with a story
-    -- consequence, not a chore. Matched as lowercase substrings against
-    -- fullName(actor) .. " " .. fullName(level sequence).
-    -- Verified against all 59 director-confirmed DIS level sequences and all
-    -- 22,748 .umap level names: each entry below matches only its intended
-    -- scenes and nothing else.
-    BlockedScenes = {
-        -- ---- violence / harm toward a named NPC ----
-        "vasylflogging",     -- 3 prompts ("Hit Vasyl", "Vasyl Charge Hard",
-                             -- "Vasyl Charge Medium"); binds Vasil_A_01 AND
-                             -- Vasil_B_01 reaction anims + MI_..._BodyTorso_WoundFX
-        "feedingesme",       -- "Feed Esme"; Esme struggle/sobs/pushes_back/
-                             -- oatmeal_throw audio, Face_Pain_idle
-        "forcefeed",         -- 2 scenes; SM_BowlWithPoison, Coen+Julian,
-                             -- audio ForceFeed_A_* and _B_* variants
-
-        -- ---- medical / bodily ----
-        "anca_wounds",       -- 3 scenes (A/B/C); "Touch Anca"/"Anca One"/
-                             -- "Anca Two", cloth + ointment jar + bucket
-        "patching_marat",    -- treating a named NPC's wounds
-
-        -- ---- ritual / self-harm / vampiric ----
-        "endurance_trial",   -- 3 scenes; blood ritual, bleed decals,
-                             -- Coen_VO_Pain_High/Scared, Endurance_Release
-        "breakritual",       -- breaking the AoH stone basin
-        "eating_mandrake",   -- NS_BloodJetBite, MI_sq717_BloodFace_Coen_03,
-                             -- audio sibling ..._Getting_Mandrake_DIS_Bite
-
-        -- ---- destructive / irreversible acts ----
-        "takerabbit",        -- epilogue; rabbit + trap, Lying_00
-        "destroying_skates", -- deliberately destroying an NPC's property
-        "filling_grave",     -- 2 prompts (Shovel Move/Shovel Push) in a quest
-                             -- "..._ending_ns" folder
-
-        -- ---- conservative: no in-scene consequence found, kept anyway ----
-        "ringingbells",      -- REPLACES the old over-broad "bell". The only
-                             -- DIS Fail audio in the game (DIS_Q101_Bell_Toll_
-                             -- Fail) belongs to this quest, though the DIS
-                             -- itself is a placeholder and the fail is
-                             -- quest-side. Cheap insurance.
-        "gettingkey",        -- sq710 "faux DIS trap" quest. The sequence is a
-                             -- placeholder, but the trap payload lives beside
-                             -- it (hand_in_hole anims, _alter dialogue takes).
-    },
+    -- Scenes to leave to the player. EMPTY BY DEFAULT, and the reason is
+    -- structural rather than cautious: a DIS prompt cannot be failed.
+    --   EInteractiveSceneEndType is { CancelledByPlayer, CancelledByQuestNode,
+    --   Completed } - there is no Failed - and BP_DIS_C only ever writes
+    --   Completed or CancelledByQuestNode. EDISInteractionType is
+    --   { Press, Hold, Tapping }. CompleteCurrentPrompt fires OnPromptSuccess
+    --   unconditionally, and every DIS director graph does nothing but call
+    --   TriggerDISInteraction. Nothing downstream can branch on how you played
+    --   a prompt, because the prompt reports nothing but success.
+    -- So this list is a matter of TASTE, not safety: use it if you would
+    -- rather perform certain scenes yourself. AutoQTE.defaults.ini carries a
+    -- ready-made cautious set you can paste into BlockAlso.
+    -- The one thing auto-completion does remove is the chance to walk away
+    -- from a scene instead of performing it.
+    BlockedScenes = {},
 
     -- Evaluated and deliberately NOT implemented, each for a validated reason:
     --   ButtonHold  hold-to-interact on doors/chests/loot. Not a QTE, and the
@@ -117,9 +88,7 @@ end
 -- Settings live in AutoQTE.ini beside this script, so a mod update cannot
 -- overwrite them. AutoQTE.defaults.ini ships as the reference copy and IS
 -- replaced on update. Anything absent or unreadable keeps the value above.
--- The ini can add to the list and remove from it. Removal needs the exact
--- shipped pattern, so a typo drops through harmlessly instead of unblocking
--- something by accident, and every removal is logged.
+-- BlockAlso in the ini is how the blocklist is normally populated at all.
 local INI_FILES = { "AutoQTE.ini", "AutoQTE.defaults.ini" }
 
 local function iniBody()
@@ -157,17 +126,6 @@ local function applyIni()
                 elseif key == "logeverycompletion" and b ~= nil then Config.LogEveryCompletion = b;   set = set + 1
                 elseif key == "togglekey"          then Config.Keys.Toggle = v;                       set = set + 1
                 elseif key == "diagnosekey"        then Config.Keys.Diagnose = v;                     set = set + 1
-                elseif key == "unblockscenes"      then
-                    for pat in v:gmatch("[^,]+") do
-                        pat = pat:match("^%s*(.-)%s*$"):lower()
-                        for i = #Config.BlockedScenes, 1, -1 do
-                            if Config.BlockedScenes[i] == pat then
-                                table.remove(Config.BlockedScenes, i)
-                                log("UNBLOCKED by ini: %s - that scene will now be auto-completed", pat)
-                                set = set + 1
-                            end
-                        end
-                    end
                 elseif key == "blockalso"          then
                     for pat in v:gmatch("[^,]+") do
                         pat = pat:match("^%s*(.-)%s*$"):lower()

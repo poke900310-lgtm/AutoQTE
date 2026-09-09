@@ -192,9 +192,37 @@ hook and what they replace. AutoQTE declares all of it:
           and adds no file inside the game's content. It therefore cannot
           conflict with any asset-replacing mod, at any load order.
 
+  Widget: one, and only while a scene is being skipped. With
+          DIS.HidePrompt = true (the default) AutoQTE sets RenderOpacity on
+          the live WBP_DIS_Prompt_New_C prompt widget and puts it back when
+          the scene ends. It only ever undoes its OWN write - if another mod
+          changed that value in the meantime, that mod's value stands.
+
 No other mod found for this game hooks those four functions, and AutoQTE
 deliberately stays off /Script/Engine.PlayerController:ClientRestart, which
 several mods for this game do share. It has no load-order requirement.
+
+HUD mods that manage the DIS prompt widget:
+
+  Dawnwalker HUDTweaks - Fixes lists WBP_DIS_Prompt_New_C in its own fade
+  watch list and writes RenderOpacity to it, so both mods end up managing one
+  widget. AutoQTE will not overwrite a value HUDTweaks set, which makes the
+  usual outcome harmless. If the prompt ever ends up faded when it should not
+  be, set DIS.HidePrompt = false here, or drop WBP_DIS_Prompt_New_C from
+  HUDTweaks' watch list. Either one settles it.
+
+  Quiet Dawn HUD uses the same capture-and-restore idiom on HUD widgets but
+  does not currently target the DIS prompt.
+
+Prerequisite conflicts, which are NOT mod conflicts:
+
+  Two different Dawnwalker UE4SS packages will fight over dwmapi.dll,
+  UE4SS-settings.ini and Mods\mods.txt. Install ONE UE4SS package and put
+  mods on top of it. AutoQTE ships none of those files and never will.
+
+Input remaps do not matter. AutoQTE never simulates a keypress - it calls the
+scene's own CompleteCurrentPrompt - so controller vs keyboard, and any
+Enhanced Input remap such as Controller Tweaks & Remap, are irrelevant to it.
 
 If all four hooks cannot be registered, the ones that succeeded are unregistered
 again rather than being left attached to functions other mods may hook later.

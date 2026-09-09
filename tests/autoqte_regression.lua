@@ -236,13 +236,13 @@ do  -- the game swaps the prompt widget mid-scene: the old one must be restored
   check("second widget restored", w2.opacity == 1.0, "w2=" .. tostring(w2.opacity))
 end
 fresh()
-do  -- slot reuse: still "alive", same full name, but a different object now
+do  -- slot reuse: alive, same full name, still holding our 0.0, different object.
+    -- Only the address check can tell it apart, so this isolates that check.
   local a, w = scene()
   hooks[START](a)
   w.__addr = 0x900000      -- the proxy now resolves to something else
-  w.opacity = 0.42         -- that something else has its own opacity
   hooks[DONE](a)
-  check("a same-named object at a new address is not written to", w.opacity == 0.42,
+  check("a same-named object at a new address is not restored", w.opacity == 0.0,
         "opacity=" .. tostring(w.opacity))
 end
 
@@ -272,6 +272,32 @@ do  -- enabled at start, disabled partway, re-enabled again
   a.props.IsPaused = true
   hooks[TRIGGER]()
   check("re-enabling resumes again", a.completed == n + 1, "completed=" .. a.completed)
+end
+
+io.write("== V11  co-existence: never clobber another mod's write to the prompt widget\n")
+fresh()
+do  -- another HUD mod fades the same widget while AutoQTE has it hidden
+  local a, w = scene()
+  hooks[START](a)
+  check("AutoQTE hid the prompt", w.opacity == 0.0, "opacity=" .. tostring(w.opacity))
+  w.opacity = 0.35                       -- HUDTweaks mid-fade, after our write
+  hooks[DONE](a)
+  check("the other mod's value survives", w.opacity == 0.35, "opacity=" .. tostring(w.opacity))
+end
+fresh()
+do  -- unchanged since our write: we must still restore it
+  local a, w = scene()
+  hooks[START](a)
+  hooks[DONE](a)
+  check("our own write is still undone", w.opacity == 1.0, "opacity=" .. tostring(w.opacity))
+end
+fresh()
+do  -- the widget was already faded by someone else before we hid it
+  local a, w = scene{}
+  w.opacity = 0.4
+  hooks[START](a)
+  hooks[DONE](a)
+  check("a pre-existing value is put back, not 1.0", w.opacity == 0.4, "opacity=" .. tostring(w.opacity))
 end
 
 io.write(string.format("\n%d passed, %d failed\n", pass, fail))

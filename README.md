@@ -220,6 +220,23 @@ AutoQTE is built to be a non-event for the rest of your load order:
   so there is no version to keep in step with anything.
 - **Warns instead of shadowing** if a keybind is already taken by a mod that
   loaded earlier.
+- **Writes to exactly one shared thing**, and only during a skip: `RenderOpacity`
+  on the live `WBP_DIS_Prompt_New_C` prompt widget, when `DIS.HidePrompt` is on.
+  It only ever undoes its *own* write — if another mod changed that value in the
+  meantime, that mod's value stands.
+- **Known HUD interaction.** *HUDTweaks – Fixes* lists `WBP_DIS_Prompt_New_C` in
+  its fade watch list and writes the same property, so both mods manage one
+  widget. Harmless in the usual case; if the prompt ends up faded when it
+  shouldn't be, set `DIS.HidePrompt = false` or drop that widget from HUDTweaks'
+  watch list. *Quiet Dawn HUD* uses the same idiom but does not target the DIS
+  prompt.
+- **Input remaps are irrelevant.** AutoQTE never simulates a keypress — it calls
+  the scene's own `CompleteCurrentPrompt` — so controller vs. keyboard and any
+  Enhanced Input remap (*Controller Tweaks & Remap*) do not affect it.
+- **Prerequisite conflicts are not mod conflicts.** Two different Dawnwalker
+  UE4SS packages will fight over `dwmapi.dll`, `UE4SS-settings.ini` and
+  `mods.txt`. Install one UE4SS package and put mods on top. AutoQTE ships none
+  of those files.
 - **Conflicts only with another QTE mod** touching the same DIS system. Run one
   or the other.
 
@@ -336,50 +353,6 @@ Re-check in this order before trusting the mod on a new build:
    mod is failing safe, but it is failing.
 6. If the patch added quests or scenes, re-derive the DIS scene list and re-audit
    the blocklist rather than assuming the old 59 still hold.
-
-## Development
-
-The mod is a single file: `Scripts/main.lua`. There is nothing to compile.
-
-```
-Scripts/main.lua              the mod
-enabled.txt                   zero-byte marker UE4SS looks for
-README.txt / LICENSE.txt      shipped at the archive root
-tests/autoqte_regression.lua  regression suite
-tests/mutants.py              proves the suite can actually fail
-tools/build.py                assembles dist/AutoQTE.zip
-```
-
-Run the suite against any copy of the mod — a working tree, or the file in a
-live install:
-
-```
-lua54.exe tests/autoqte_regression.lua Scripts/main.lua
-```
-
-It stubs the UE4SS globals, including the truthy-phantom behaviour for members
-that do not exist, and asserts only on observables: whether
-`CompleteCurrentPrompt` was called, on what, what was logged, and what opacity
-the prompt widget was left at.
-
-A green suite means nothing on its own, so every assertion is mutation-tested:
-
-```
-python tests/mutants.py <path to lua54.exe>
-```
-
-Each mutant breaks one behaviour and the suite must go red. Any `SURVIVED` line
-is a hole. One known survivor is documented in that script and deliberately
-excluded — `getScalar`'s type filter is guarded again by every caller, so
-removing it changes no observable.
-
-To build the release archive:
-
-```
-python tools/build.py
-```
-
-It refuses to package a file with `Verbose` or `LogEveryCompletion` left on.
 
 ## Credits and licence
 

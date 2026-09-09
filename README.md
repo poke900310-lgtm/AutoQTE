@@ -1,8 +1,8 @@
 # AutoQTE — The Blood of Dawnwalker
 
 Auto-resolves the game's DIS quick-time prompts (the button-press and
-tap-repeatedly interactions) so they play out on their own, while leaving
-story-relevant ones alone for you to perform yourself.
+tap-repeatedly interactions) so they play out on their own. An optional
+blocklist lets you keep any scenes you would rather perform yourself.
 
 - **Version:** 1.0.0
 - **Game:** The Blood of Dawnwalker — verified on `dw1-pc-256181-shipping-patch2-all` (CL-256181) and `dw1-pc-257186-shipping-patch2-all` (CL-257186), both UE 5.5.4
@@ -117,35 +117,32 @@ Each of these was examined and deliberately left alone:
 | Finishers | No input window at all — success is rolled before the animation. Nothing to skip. |
 | Inspections | Structurally similar to DIS, but self-paced with no timer and no fail state, and each hotspot plays narrative VO. Automating it would skip content. |
 
-## The blocklist, and why it exists
+## The blocklist
 
-Not every prompt is a chore. Some of them *are* the scene: the game asks you to
-press the button because pressing it is an act with a consequence — hurting
-someone, feeding someone, breaking something, performing a ritual on yourself.
-Automating those takes the decision away from you, and can quietly change what a
-scene means or which of two outcomes you get.
+**Nothing is blocked by default**, and that is a finding rather than a
+convenience.
 
-So AutoQTE ships with **13 blocklist entries covering 18 of the game's 59 DIS
-scenes**. Blocked scenes are left completely untouched: the prompt
-appears, the timer runs, and you play it. The log records
-`BLOCKED (<entry>) - left to the player` when one comes up.
+A DIS prompt cannot be failed. The engine's scene-end type is
+`{ CancelledByPlayer, CancelledByQuestNode, Completed }` — there is no `Failed`
+value — and `BP_DIS_C` only ever writes `Completed` or `CancelledByQuestNode`.
+The interaction type is `{ Press, Hold, Tapping }`. `CompleteCurrentPrompt`
+fires `OnPromptSuccess` unconditionally, every DIS director graph does nothing
+but call `TriggerDISInteraction`, and the entire game contains exactly one DIS
+failure audio event, which belongs to a quest rather than to a scene.
 
-The current list, grouped by why:
+So nothing downstream can branch on how you played a prompt, because the prompt
+reports nothing but success. Auto-completing a scene reaches exactly the state
+that playing it by hand reaches.
 
-- **Violence or harm toward a named NPC** — `vasylflogging`, `feedingesme`,
-  `forcefeed`.
-- **Medical / bodily** — `anca_wounds`, `patching_marat`.
-- **Ritual / self-harm / vampiric** — `endurance_trial`, `breakritual`,
-  `eating_mandrake`.
-- **Destructive or irreversible acts** — `takerabbit`, `destroying_skates`,
-  `filling_grave`.
-- **Conservative — no in-scene consequence found, kept anyway** —
-  `ringingbells`, `gettingkey`.
+The one thing auto-completion does take away is the chance to **walk away** from
+a scene instead of performing it. If you would rather make that choice yourself
+for the game's more pointed moments — hitting someone, a bowl of poison, a blood
+ritual — put them in `BlockAlso`. `AutoQTE.defaults.ini` ships a ready-made
+cautious set of 13 patterns covering 18 scenes, commented out, with a one-line
+note on each. Uncomment it, trim it, or ignore it.
 
-Entries are matched as **lowercase substrings** against the scene actor's full
-name joined with its level sequence's full name. Each entry was checked against
-all 59 director-confirmed DIS sequences and all 22,748 level names, and matches
-only its intended scenes.
+A blocked scene is left completely untouched: the prompt appears, and you play
+it. The log records `BLOCKED (<entry>) - left to the player`.
 
 ---
 
@@ -290,7 +287,7 @@ game symbols at all — a UE4SS/game-version problem, not an AutoQTE one. If som
 hook and some do not, the build has changed and the mod needs re-verifying
 against it.
 
-**`AutoQTE v1.0.0 loaded (15 patterns / 20 scenes blocked)` but nothing happens in a scene**
+**`AutoQTE v1.0.0 loaded (0 blocklist patterns)` but nothing happens in a scene**
 Either the scene is blocklisted — look for a `BLOCKED` line — or it never
 started under a class the mod recognises. If you see `scene started` but never
 `skipped:`, the prompt is not registering as pending: press the diagnose
@@ -355,8 +352,8 @@ Not AutoQTE — remove it and confirm. The usual cause on this game is
 - **Failure is quiet and safe.** If a hook cannot be installed, or a scene cannot
   be identified, AutoQTE does nothing and the game behaves normally. It never
   falls back to guessing.
-- **The blocklist is a judgement call.** It reflects one person's reading of
-  which prompts carry weight. Yours may differ — edit it.
+- **The blocklist is taste, not safety.** Nothing is blocked by default because
+  nothing mechanically needs to be. Add what you want to perform yourself.
 - **No on-screen indication.** A skipped scene is recorded in the log, not on
   screen. An on-screen notice was built and tested against the shipping build:
   the only suitable widget the game ships is not loaded during open-world play,

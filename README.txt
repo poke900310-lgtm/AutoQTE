@@ -12,7 +12,7 @@ AutoQTE resolves them for you by calling the scene's own CompleteCurrentPrompt()
 - the exact function the game runs when you hit the prompt yourself - and fades
 the prompt ring out so the moment plays through uninterrupted.
 
-19 of the game's 59 DIS scenes are DELIBERATELY LEFT ALONE. Where the prompt is
+18 of the game's 59 DIS scenes are DELIBERATELY LEFT ALONE. Where the prompt is
 an act with story weight rather than a chore - harming a named NPC, medical or
 ritual scenes, destructive acts - you still perform it yourself. A scene the mod
 cannot positively identify is also left alone, on purpose.
@@ -152,7 +152,7 @@ is what the ini overrides.
                        Default true. Purely cosmetic; the prompt is resolved
                        either way.
 
-  BlockedScenes        The safety list: 14 patterns covering 19 scenes. Each
+  BlockedScenes        The safety list: 13 patterns covering 18 scenes. Each
                        entry is a lowercase substring matched against the
                        scene's actor path and its level sequence path, with a
                        comment recording why that scene is on the list. Add

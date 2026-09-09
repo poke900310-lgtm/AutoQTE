@@ -179,24 +179,27 @@ do
   check("skip line keeps the scene identity", line ~= nil and line:find("ls_dis_woodchopping_long", 1, true) ~= nil, line)
 end
 
-io.write("== V5  every blocklist pattern blocks its scene\n")
--- One case per pattern. Deleting or corrupting any entry turns this red.
-local PATTERNS = { "vasylflogging", "feedingesme", "forcefeed",
-                   "anca_wounds", "patching_marat", "endurance_trial", "breakritual",
-                   "eating_mandrake", "takerabbit", "destroying_skates", "filling_grave",
-                   "ringingbells", "gettingkey" }
+io.write("== V5  nothing is blocked by default; BlockAlso is what blocks\n")
+local PATTERNS = { "vasylflogging", "feedingesme", "forcefeed", "anca_wounds",
+                   "patching_marat", "endurance_trial", "breakritual",
+                   "eating_mandrake", "takerabbit", "destroying_skates",
+                   "filling_grave", "ringingbells", "gettingkey" }
 do
+  INI = nil; fresh()
+  local a = scene{ seqName = "InteractiveSceneLevelSequence /Game/Q/DIS/LS_vasylflogging_DIS" }
+  hooks[START](a)
+  check("the shipped list blocks nothing", a.completed == 1, "completed=" .. a.completed)
+end
+do  -- the cautious reference set documented in AutoQTE.defaults.ini
   local bad = {}
   for _, pat in ipairs(PATTERNS) do
-    fresh()
+    INI = "BlockAlso = " .. pat .. "\n"; fresh()
     local a = scene{ seqName = "InteractiveSceneLevelSequence /Game/Q/DIS/LS_" .. pat .. "_DIS" }
     hooks[START](a)
-    if a.completed ~= 0 or logged("BLOCKED (" .. pat .. ")") == nil then
-      bad[#bad + 1] = pat
-    end
+    if a.completed ~= 0 or logged("BLOCKED (" .. pat .. ")") == nil then bad[#bad + 1] = pat end
   end
-  check(#PATTERNS .. " patterns each block their scene", #bad == 0,
-        #bad > 0 and ("not blocked: " .. table.concat(bad, ", ")) or nil)
+  check(#PATTERNS .. " reference patterns each block via BlockAlso", #bad == 0,
+        #bad > 0 and ("failed: " .. table.concat(bad, ", ")) or nil)
 end
 
 io.write("== V6  phantom-userdata defence, each half independently\n")
@@ -340,22 +343,6 @@ do  -- BlockAlso adds patterns
         "completed=" .. a.completed)
   check("and says which pattern matched", logged("BLOCKED (woodchopping)") ~= nil)
 end
-do  -- UnblockScenes, with the exact shipped pattern
-  INI = "UnblockScenes = takerabbit\n"; fresh()
-  local a = scene{ seqName = "InteractiveSceneLevelSequence /Game/Q/DIS/LS_takerabbit_DIS" }
-  hooks[START](a)
-  check("UnblockScenes releases the named scene", a.completed == 1, "completed=" .. a.completed)
-  check("and says so loudly in the log", logged("UNBLOCKED by ini: takerabbit") ~= nil)
-end
-do  -- a near miss must drop through, not unblock something by accident
-  INI = "UnblockScenes = takerabit, vasyl, VASYLFLOGGING_X\n"; fresh()
-  local a = scene{ seqName = "InteractiveSceneLevelSequence /Game/Q/DIS/LS_takerabbit_DIS" }
-  hooks[START](a)
-  check("a misspelt pattern unblocks nothing", a.completed == 0, "completed=" .. a.completed)
-  local b = scene{ seqName = "InteractiveSceneLevelSequence /Game/Q/DIS/LS_vasylflogging_DIS" }
-  hooks[START](b)
-  check("a partial pattern unblocks nothing either", b.completed == 0, "completed=" .. b.completed)
-end
 do  -- keys come from the ini
   INI = "ToggleKey = F7\nDiagnoseKey =\n"; fresh()
   check("ToggleKey=F7 binds F7", binds.F7 ~= nil)
@@ -369,11 +356,11 @@ do  -- junk must not break anything
   check("a malformed ini still loads and works", a.completed == 1, "completed=" .. a.completed)
   check("and reports the lines it could not read", logged("not understood") ~= nil)
 end
-do  -- the blocklist survives a hostile ini
-  INI = "BlockAlso =\nBlockAlso = ,,,\n"; fresh()
+do  -- empty and junk BlockAlso entries must not disturb a real one
+  INI = "BlockAlso =\nBlockAlso = ,,,\nBlockAlso = takerabbit\n"; fresh()
   local a = scene{ seqName = "InteractiveSceneLevelSequence /Game/Q/DIS/LS_takerabbit_DIS" }
   hooks[START](a)
-  check("shipped blocklist intact after an empty BlockAlso", a.completed == 0,
+  check("a real BlockAlso survives empty ones beside it", a.completed == 0,
         "completed=" .. a.completed)
 end
 

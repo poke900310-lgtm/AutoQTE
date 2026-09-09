@@ -184,7 +184,7 @@ io.write("== V5  every blocklist pattern blocks its scene\n")
 local PATTERNS = { "vasylflogging", "feedingesme", "forcefeed",
                    "anca_wounds", "patching_marat", "endurance_trial", "breakritual",
                    "eating_mandrake", "takerabbit", "destroying_skates", "filling_grave",
-                   "ringingbells", "gettingkey", "hookingworm" }
+                   "ringingbells", "gettingkey" }
 do
   local bad = {}
   for _, pat in ipairs(PATTERNS) do

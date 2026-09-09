@@ -125,7 +125,7 @@ someone, feeding someone, breaking something, performing a ritual on yourself.
 Automating those takes the decision away from you, and can quietly change what a
 scene means or which of two outcomes you get.
 
-So AutoQTE ships with **15 blocklist entries covering 20 of the game's 59 DIS
+So AutoQTE ships with **14 blocklist entries covering 19 of the game's 59 DIS
 scenes**. Blocked scenes are left completely untouched: the prompt
 appears, the timer runs, and you play it. The log records
 `BLOCKED (<entry>) - left to the player` when one comes up.
@@ -133,8 +133,7 @@ appears, the timer runs, and you play it. The log records
 The current list, grouped by why:
 
 - **Violence or harm toward a named NPC** — `vasylflogging`, `feedingesme`,
-  `forcefeed`, `liftingbeam` (that one binds both a survivor animation and a
-  corpse mesh on independent tracks, so it has two outcomes).
+  `forcefeed`.
 - **Medical / bodily** — `anca_wounds`, `patching_marat`.
 - **Ritual / self-harm / vampiric** — `endurance_trial`, `breakritual`,
   `eating_mandrake`.
@@ -165,14 +164,19 @@ startup; restart after editing.
 | `Enabled` | `true` | Master switch; the toggle key flips it in game. |
 | `HidePrompt` | `true` | Fade the prompt ring while a scene is skipped. Set `false` if a HUD mod also manages that widget. |
 | `ToggleKey` / `DiagnoseKey` | `F4` / `F5` | UE4SS key names. Empty binds nothing. |
-| `BlockAlso` | *(empty)* | Extra scenes to leave alone, comma separated. **Add-only** — see below. |
+| `BlockAlso` | *(empty)* | Extra scenes to leave alone, comma separated. |
+| `UnblockScenes` | *(empty)* | Shipped entries to release, comma separated. Exact pattern; every release is logged. |
 | `Verbose` | `false` | Also write `AutoQTE.log` beside `main.lua`. |
 | `LogEveryCompletion` | `false` | One line per prompt. Noisy; for diagnosing one scene. |
 
-`BlockAlso` can only **add** to the blocklist. A story scene cannot be
-unblocked from the ini, deliberately: a typo in a config file must never
-auto-complete something that matters. Removing a shipped entry is still a
-deliberate edit of `BlockedScenes` in `Scripts\main.lua`.
+The list is a judgement call, not a rule the game exposes — so the ini adjusts
+it **in both directions** and you never have to edit Lua. `UnblockScenes` needs
+the *exact* shipped pattern, so a near miss releases nothing rather than
+something unintended, and each release is written to the log as
+`UNBLOCKED by ini: <pattern>`.
+
+Press the diagnose key during any scene to see its identity string in the log;
+any distinctive lowercase fragment of that works as a pattern.
 
 ### `BlockedScenes`
 

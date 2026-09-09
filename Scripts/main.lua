@@ -210,10 +210,13 @@ local function setOpacity(w, value)
     return (call(w, "SetRenderOpacity", value))
 end
 
+-- Undoes our own write and nothing else. If another HUD mod has touched the
+-- widget since we hid it, its value stands -- we do not own that pixel.
 local function restorePrompt()
     local restored, prev = true, hiddenOpacity
     if hiddenWidget and isAlive(hiddenWidget)
-       and addressOf(hiddenWidget) == hiddenAddr and fullName(hiddenWidget) == hiddenName then
+       and addressOf(hiddenWidget) == hiddenAddr and fullName(hiddenWidget) == hiddenName
+       and getScalar(hiddenWidget, "RenderOpacity") == 0.0 then
         restored = setOpacity(hiddenWidget, hiddenOpacity or 1.0)
     end
     hiddenWidget, hiddenName, hiddenAddr, hiddenOpacity = nil, nil, nil, nil

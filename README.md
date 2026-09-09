@@ -31,7 +31,11 @@ type. Vortex strips the `Data` folder and deploys into
 Dawnwalker\Binaries\Win64\ue4ss\Mods\AutoQTE\
     enabled.txt
     Scripts\main.lua
+    Scripts\AutoQTE.defaults.ini
 ```
+
+Copy `AutoQTE.defaults.ini` to `AutoQTE.ini` in that same folder if you want to
+change a setting. The mod runs fine without it.
 
 Then start the game. Nothing else needs editing — `enabled.txt` is all UE4SS
 needs to start the mod.

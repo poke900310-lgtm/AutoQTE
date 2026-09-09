@@ -12,7 +12,7 @@ AutoQTE resolves them for you by calling the scene's own CompleteCurrentPrompt()
 - the exact function the game runs when you hit the prompt yourself - and fades
 the prompt ring out so the moment plays through uninterrupted.
 
-20 of the game's 59 DIS scenes are DELIBERATELY LEFT ALONE. Where the prompt is
+19 of the game's 59 DIS scenes are DELIBERATELY LEFT ALONE. Where the prompt is
 an act with story weight rather than a chore - harming a named NPC, medical or
 ritual scenes, destructive acts - you still perform it yourself. A scene the mod
 cannot positively identify is also left alone, on purpose.
@@ -136,10 +136,10 @@ Settings are read once at startup. Restart the game after editing.
   HidePrompt           Fade the prompt ring while a scene is skipped.
   ToggleKey            Default "F4". Empty binds nothing.
   DiagnoseKey          Default "F5". Empty binds nothing.
-  BlockAlso            Extra scenes to leave alone, comma separated. This can
-                       only ADD - a story scene cannot be unblocked from the
-                       ini, so a typo can never auto-complete one. To remove a
-                       shipped entry, edit BlockedScenes in main.lua.
+  BlockAlso            Extra scenes to leave alone, comma separated.
+  UnblockScenes        Shipped entries to release, comma separated. Needs the
+                       exact pattern, so a near miss releases nothing, and
+                       every release is written to the log.
   Verbose              Also write AutoQTE.log beside main.lua.
   LogEveryCompletion   One line per prompt. Noisy; for diagnosing one scene.
 
@@ -152,7 +152,7 @@ is what the ini overrides.
                        Default true. Purely cosmetic; the prompt is resolved
                        either way.
 
-  BlockedScenes        The safety list: 15 patterns covering 20 scenes. Each
+  BlockedScenes        The safety list: 14 patterns covering 19 scenes. Each
                        entry is a lowercase substring matched against the
                        scene's actor path and its level sequence path, with a
                        comment recording why that scene is on the list. Add

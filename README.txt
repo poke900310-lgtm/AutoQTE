@@ -148,9 +148,6 @@ Settings are read once at startup. Restart the game after editing.
   ToggleKey            Default "F4". Empty binds nothing.
   DiagnoseKey          Default "F5". Empty binds nothing.
   BlockAlso            Extra scenes to leave alone, comma separated.
-  UnblockScenes        Shipped entries to release, comma separated. Needs the
-                       exact pattern, so a near miss releases nothing, and
-                       every release is written to the log.
   Verbose              Also write AutoQTE.log beside main.lua.
   LogEveryCompletion   One line per prompt. Noisy; for diagnosing one scene.
 
@@ -311,7 +308,7 @@ prefixed [Lua] [AutoQTE].
   If ue4ss\UE4SS.log does not exist at all
         UE4SS is not installed or is not loading. Nothing below applies.
 
-  "AutoQTE v1.0.0 loaded (15 patterns / 20 scenes blocked)"
+  "AutoQTE v1.0.0 loaded (0 blocklist patterns)"
         The mod loaded. If this line is missing, it did not.
 
   "hooked ..."  x4
@@ -339,7 +336,7 @@ prefixed [Lua] [AutoQTE].
         Normal. One pair per scene.
 
   "BLOCKED (<name>) - left to the player: <path>"
-        Working as intended - that scene is on the safety list. Play it
+        Working as intended - you put that scene in BlockAlso. Play it
         yourself.
 
   "BLOCKED (unidentified scene)" on EVERY scene

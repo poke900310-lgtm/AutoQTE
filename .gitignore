@@ -26,3 +26,6 @@ __pycache__/
 Thumbs.db
 Desktop.ini
 .DS_Store
+
+# Internal release review, not part of the release
+release_review.md

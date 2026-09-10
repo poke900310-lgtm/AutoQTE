@@ -81,22 +81,27 @@ def check(target):
             sharedlib.add(member.split("shared/", 1)[-1].split("/")[0])
         if ext not in TEXT_EXT:
             continue
+        doc_only = ext in (".txt", ".md")
         try:
             text = data.decode("utf-8", "replace")
         except Exception:
             continue
         for token in HOOKS:
-            if token in text:
+            if token in text and not doc_only:      # prose is not behaviour
                 hooks.add(token)
         if HOOK_RE.search(text):
             hooks.add("BP_DIS")
         for token in WIDGET:
-            if token in text:
+            if token in text and not doc_only:
                 widget.add(token)
         for token in SEQUENCE:
-            if token in text:
+            if token in text and not doc_only:
                 seq.add(token)
         for m in re.finditer(r"Key\.([A-Z_0-9]+)", text):
+            if m.group(1) in OURKEYS:
+                keys.add(m.group(1))
+        # ini-style, e.g. toggleKey = F4 - the idiom this ecosystem ships
+        for m in re.finditer(r"(?im)^[^;#]*[a-z]*key\s*=\s*(F[0-9]{1,2})(?![0-9])", text):
             if m.group(1) in OURKEYS:
                 keys.add(m.group(1))
         for m in re.finditer(r'["\'](F[0-9]{1,2})["\']', text):
@@ -119,7 +124,7 @@ def check(target):
         print("  [!] WRITES HUD WIDGET PROPERTIES: " + ", ".join(sorted(widget)))
         print("      May contend for the DIS prompt widget. AutoQTE will not")
         print("      overwrite another mod's value; if the prompt is ever left")
-        print("      faded, set DIS.HidePrompt = false.")
+        print("      faded, set HidePrompt = false in AutoQTE.ini.")
         if verdict == "COMPATIBLE":
             verdict = "NOTE"
     if sharedlib:
@@ -144,7 +149,7 @@ def check(target):
     if keys:
         print("  [!] MAY BIND " + ", ".join(sorted(keys)) + " - AutoQTE's default keys.")
         print("      AutoQTE yields to whoever registered first; a mod loading")
-        print("      later can co-bind. Change Config.Keys if a key does nothing.")
+        print("      later can co-bind. Change ToggleKey/DiagnoseKey in AutoQTE.ini.")
         if verdict == "COMPATIBLE":
             verdict = "NOTE"
     if verdict == "COMPATIBLE":
@@ -154,15 +159,19 @@ def check(target):
     return verdict
 
 
-def main():
+def main():   # returns a shell exit code so this can gate a script
     if len(sys.argv) < 2:
         sys.exit(__doc__)
+    worst = 0
+    rank = {"COMPATIBLE": 0, "NOTE": 1, "REVIEW": 2, "CONFLICT": 3}
     for t in sys.argv[1:]:
         if not os.path.exists(t):
             print("missing: " + t)
+            worst = max(worst, 2)
             continue
-        check(t)
+        worst = max(worst, rank.get(check(t), 0))
+    return worst
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

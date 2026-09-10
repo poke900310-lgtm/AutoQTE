@@ -3,7 +3,7 @@
 -- F4 toggle | F5 diagnose   (F10 is the game console, bound by ConsoleEnablerMod)
 -- Console commands do not work in this title (ProcessConsoleExec unavailable).
 
-local VERSION = "1.0.0"
+local VERSION = "1.0.1"
 
 local Config = {
     Enabled = true,
@@ -13,20 +13,23 @@ local Config = {
         HidePrompt = true,
     },
 
-    -- Scenes to leave to the player. EMPTY BY DEFAULT, and the reason is
-    -- structural rather than cautious: a DIS prompt cannot be failed.
-    --   EInteractiveSceneEndType is { CancelledByPlayer, CancelledByQuestNode,
-    --   Completed } - there is no Failed - and BP_DIS_C only ever writes
-    --   Completed or CancelledByQuestNode. EDISInteractionType is
-    --   { Press, Hold, Tapping }. CompleteCurrentPrompt fires OnPromptSuccess
-    --   unconditionally, and every DIS director graph does nothing but call
-    --   TriggerDISInteraction. Nothing downstream can branch on how you played
-    --   a prompt, because the prompt reports nothing but success.
-    -- So this list is a matter of TASTE, not safety: use it if you would
-    -- rather perform certain scenes yourself. AutoQTE.defaults.ini carries a
-    -- ready-made cautious set you can paste into BlockAlso.
-    -- The one thing auto-completion does remove is the chance to walk away
-    -- from a scene instead of performing it.
+    -- Scenes to leave to the player. EMPTY BY DEFAULT.
+    --
+    -- Auto-completing a prompt is not a story decision. AutoQTE only ever calls
+    -- CompleteCurrentPrompt, which fires OnPromptSuccess and sets the scene's end
+    -- type to Completed (BP_DIS_C ubergraph 15292) - byte-identical to what the
+    -- game records when you press the button yourself. It cannot produce any
+    -- other end state.
+    --
+    -- Quest logic DOES distinguish outcomes: QuestNodeInteractiveScene_Controller
+    -- declares OnCompletedInteractiveScene and OnCancelledInteractiveScene, and
+    -- InteractiveSceneObject carries a delegate for each. AutoQTE can only ever
+    -- reach the Completed side - the same side successful manual play reaches.
+    -- EInteractiveSceneEndType's third value, CancelledByPlayer, is never written
+    -- by BP_DIS_C at all: only Completed (2) and CancelledByQuestNode (1).
+    --
+    -- So this list is a matter of TASTE. Use it if you would rather perform a
+    -- scene yourself. AutoQTE.defaults.ini carries a ready-made cautious set.
     BlockedScenes = {},
 
     -- Evaluated and deliberately NOT implemented, each for a validated reason:
@@ -74,12 +77,13 @@ local function log(fmt, ...)
     if not ok then msg = tostring(fmt) end
     if msg == lastMsg then reps = reps + 1; return end
     lastMsg = msg
-    if reps > 0 then msg = string.format("(previous line x%d)\n%s", reps + 1, msg); reps = 0 end
+    if reps > 0 then print(string.format("[AutoQTE] (previous line x%d)\n", reps + 1)); reps = 0 end
     print("[AutoQTE] " .. msg .. "\n")
-    if Config.Verbose then
+    if Config.Verbose and logFile ~= false then
         if not logFile then
             local okf, f = pcall(io.open, LOG, "a")
-            if okf and f then logFile = f end
+            logFile = (okf and f) or false          -- false = tried and failed, never retry
+            if logFile == false then print("[AutoQTE] could not open " .. LOG .. "\n") end
         end
         if logFile then logFile:write(msg .. "\n"); logFile:flush() end
     end
@@ -112,13 +116,20 @@ end
 
 local function applyIni()
     local body, name = iniBody()
-    if not body then return end
+    if not body then
+        log("no AutoQTE.ini or AutoQTE.defaults.ini beside main.lua - using built-in defaults")
+        return
+    end
+    body = body:gsub("^\239\187\191", "")            -- a UTF-8 BOM would eat the first setting
     local set, bad = 0, 0
     for line in body:gmatch("[^\r\n]+") do
         if not line:match("^%s*[;#%[]") then
-            local k, v = line:match("^%s*([%w_]+)%s*=%s*(.-)%s*$")
+            -- Accept a dotted key: v1.0.0 documented DIS.HidePrompt.
+            local k, v = line:match("^%s*([%w_.]+)%s*=%s*(.-)%s*$")
             if k then
-                local key, b = k:lower(), nil
+                v = v:gsub("%s*[;#].*$", "")                        -- inline comment
+                v = v:match('^"(.*)"$') or v:match("^'(.*)'$") or v  -- README showed quotes
+                local key, b = k:lower():gsub("^dis%.", ""), nil
                 if v ~= "" then b = toBool(v) end
                 if     key == "enabled"            and b ~= nil then Config.Enabled = b;              set = set + 1
                 elseif key == "hideprompt"         and b ~= nil then Config.DIS.HidePrompt = b;       set = set + 1
@@ -135,6 +146,8 @@ local function applyIni()
                         end
                     end
                 else bad = bad + 1 end
+            elseif line:match("%S") then
+                bad = bad + 1                          -- never drop a line silently
             end
         end
     end
@@ -207,9 +220,18 @@ local hiddenOpacity  = nil
 
 local endScene
 
+local function sceneIdentity(actor)
+    local ok, seq = call(actor, "GetInteractiveSceneLevelSequence")
+    if not (ok and isAlive(seq)) then return nil end
+    local n = fullName(seq)
+    if n == "" then return nil end
+    return (fullName(actor) .. " " .. n):lower()
+end
+
 local function diagnose(actor)
     log(string.rep("-", 62))
     log("actor: %s", fullName(actor))
+    log("scene: %s", sceneIdentity(actor) or "<unidentified>")
     for _, p in ipairs({ P_PAUSED, "PauseElapsedTime", "TappingCount", "TappingStep",
                          "TappingDrop", "Tapping Threshold", "LastTime",
                          "InteractiveSceneEndType" }) do
@@ -245,7 +267,11 @@ local function restorePrompt()
        and getScalar(hiddenWidget, "RenderOpacity") == 0.0 then
         restored = setOpacity(hiddenWidget, hiddenOpacity or 1.0)
     end
-    hiddenWidget, hiddenName, hiddenAddr, hiddenOpacity = nil, nil, nil, nil
+    -- Only forget the widget if we actually un-hid it. Dropping it after a refusal
+    -- strands it at 0.0 for the session and latches that 0.0 as the "original".
+    if restored then
+        hiddenWidget, hiddenName, hiddenAddr, hiddenOpacity = nil, nil, nil, nil
+    end
     return restored, prev
 end
 
@@ -254,20 +280,12 @@ local function hidePrompt(actor)
     local w = getObject(actor, P_WIDGET)
     local restored, prev = restorePrompt()
     -- A refused restore leaves our own 0.0 on the widget; never latch that as the original.
-    local was = prev
-    if restored then was = getScalar(w, "RenderOpacity") end
+    local was = getScalar(w, "RenderOpacity")
+    if not restored and was == 0.0 then was = prev end
     if setOpacity(w, 0.0) then
         hiddenWidget, hiddenName, hiddenAddr = w, fullName(w), addressOf(w)
         hiddenOpacity = type(was) == "number" and was or 1.0
     end
-end
-
-local function sceneIdentity(actor)
-    local ok, seq = call(actor, "GetInteractiveSceneLevelSequence")
-    if not (ok and isAlive(seq)) then return nil end
-    local n = fullName(seq)
-    if n == "" then return nil end
-    return (fullName(actor) .. " " .. n):lower()
 end
 
 local function isBlocked(id)
@@ -437,7 +455,7 @@ local function bind(name, fn)
         return
     end
     if taken then
-        log("%s is already claimed by another mod - not binding; change Config.Keys", name)
+        log("%s is already claimed by another mod - not binding; change it in AutoQTE.ini", name)
         return
     end
     if not pcall(RegisterKeyBind, key, {}, fn) then

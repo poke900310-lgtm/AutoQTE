@@ -4,8 +4,8 @@ Auto-resolves the game's DIS quick-time prompts (the button-press and
 tap-repeatedly interactions) so they play out on their own. An optional
 blocklist lets you keep any scenes you would rather perform yourself.
 
-- **Version:** 1.0.0
-- **Game:** The Blood of Dawnwalker — verified on `dw1-pc-256181-shipping-patch2-all` (CL-256181) and `dw1-pc-257186-shipping-patch2-all` (CL-257186), both UE 5.5.4
+- **Version:** 1.0.1
+- **Game:** The Blood of Dawnwalker — verified on `dw1-pc-256181-shipping-patch2-all` (CL-256181) and `dw1-pc-258042-shipping-patch2-all` (CL-258042), both UE 5.5.4
 - **Requires:** a Dawnwalker-compatible [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) 3.x install, already working
 - **Type:** Lua mod. No pak, no asset replacement, no Blueprint hooks, no shared library.
 - **Touches:** nothing outside its own mod folder. No saves, no game settings, no other mod's files.
@@ -26,6 +26,10 @@ type. Vortex strips the `Data` folder and deploys into
 
 **Manual:** copy the `AutoQTE` folder out of `Data\` in the archive into
 `Dawnwalker\Binaries\Win64\ue4ss\Mods\`, so you end up with:
+
+> On **Xbox / Game Pass** the project folder is `WinGDK`, not `Win64` —
+> `Dawnwalker\Binaries\WinGDK\ue4ss\Mods\`. Only `<Project>\Binaries`
+> changes; `Engine\Binaries` stays `Win64`. Vortex resolves this itself.
 
 ```
 Dawnwalker\Binaries\Win64\ue4ss\Mods\AutoQTE\
@@ -74,6 +78,19 @@ AutoQTE runs on the UE4SS defaults for everything else
 (`HookUObjectProcessEvent = 1`, `HookEngineTick = 1`) and needs **nothing turned
 off**, so leave the rest of `[Hooks]` exactly as your UE4SS package shipped it.
 Mods that need Blueprint hooking keep working alongside it.
+
+## Upgrading
+
+Overwrite the folder in place. An update replaces `Scripts\main.lua` and
+`Scripts\AutoQTE.defaults.ini`; your own `AutoQTE.ini` is not in the archive
+and is left alone. **Do not delete the folder first** — that deletes your
+settings with it. Vortex does the right thing automatically. Close the game
+first; there is no hot reload.
+
+If you copied the `BlockAlso` reference set out of an older
+`AutoQTE.defaults.ini`, re-copy it from the new one. In 1.0.0 that example was
+wrapped across four lines and the parser reads one key per line, so only its
+first four patterns ever took effect — silently.
 
 ## Uninstall
 
@@ -168,23 +185,16 @@ startup; restart after editing.
 Nothing is blocked unless you put it in `BlockAlso`, so the list lives entirely
 in your ini and never has to be edited in Lua.
 
-Press the diagnose key during any scene to see its identity string in the log;
-any distinctive lowercase fragment of that works as a pattern.
-
-### `BlockedScenes`
-
-The list described above. Add a lowercase substring to protect a scene, delete
-one to let AutoQTE handle it.
-
-To find the right string for a scene: stand in it, press the **diagnose key**,
-and read the `actor:` line the mod logs. Any distinctive lowercase fragment of
-that name works. Prefer something long and specific (`vasylflogging`) over
-something short (`bell`), which will match scenes you did not intend.
+Press the diagnose key during a scene and read the **`scene:`** line it logs —
+that is the identity `BlockAlso` matches against. Take a distinctive lowercase
+fragment of the level-sequence half (`vasylflogging`), not of the `actor:` line,
+which is a per-instance GUID that will not match again after a reload.
 
 ### Keybinds
 
-```lua
-Keys = { Toggle = "F4", Diagnose = "F5" },
+```ini
+ToggleKey = F4
+DiagnoseKey = F5
 ```
 
 F4 and F5 were picked because almost everything else is taken on this game:
@@ -199,9 +209,9 @@ F4 and F5 were picked because almost everything else is taken on this game:
 | F11 | Cheat Menu, Ultrawide Fix |
 | F12 | Cheat Menu, and Steam's screenshot key |
 
-Each entry is the **name** of a UE4SS key, written as a string — `"F4"`,
-`"INSERT"`, `"HOME"`, `"NUM_FIVE"`. Set an entry to `""` to register no bind at
-all. Modifier combinations are not supported.
+Each entry is a UE4SS key name written **without quotes** — `ToggleKey = F4`,
+`ToggleKey = INSERT`, `ToggleKey = NUM_FIVE`. Leave the value empty to register
+no bind at all. Modifier combinations are not supported.
 
 F1, F2 and F3 are claimed by DawnWALKING on this game, so they make poor
 alternates; prefer something unused like `"INSERT"` or `"HOME"` if F4 or F5
@@ -209,12 +219,8 @@ clash on your setup.
 
 UE4SS's own binds are all `Ctrl` combos and do not collide.
 
-### The rest
-
-| Setting | Default | Effect |
-|---|---|---|
+---|---|---|
 | `Enabled` | `true` | Master switch. The toggle key flips it at runtime, in either direction, mid-scene: switch off and the live prompt returns for you to play, switch on and the next prompt in that same scene is resolved. Not persisted — restarting restores this value. |
-| `DIS.HidePrompt` | `true` | Hides the prompt widget so it does not flash on screen. |
 | `Verbose` | `false` | Also write the mod's log lines to `AutoQTE.log` beside `main.lua`. With this off the same lines still reach the UE4SS console and `UE4SS.log`. |
 | `LogEveryCompletion` | `false` | Adds a line per individual prompt plus trigger state. Noisy; for diagnosing one misbehaving scene. |
 
@@ -241,13 +247,17 @@ AutoQTE is built to be a non-event for the rest of your load order:
 - **Warns instead of shadowing** if a keybind is already taken by a mod that
   loaded earlier.
 - **Writes to exactly one shared thing**, and only during a skip: `RenderOpacity`
-  on the live `WBP_DIS_Prompt_New_C` prompt widget, when `DIS.HidePrompt` is on.
-  It only ever undoes its *own* write — if another mod changed that value in the
-  meantime, that mod's value stands.
+  on the live `WBP_DIS_Prompt_New_C` prompt widget, when `HidePrompt` is on. It
+  restores that widget only while it still reads back the `0.0` AutoQTE wrote, so
+  another mod's *non-zero* value is never overwritten. One limitation worth
+  knowing: a mod that independently sets the same widget to `0.0` — HUDTweaks'
+  `AutoFade` does exactly this with its default `idleOpacity = 0.0` — is
+  indistinguishable from our own write, and AutoQTE will restore over it.
+  `HidePrompt = false` avoids the whole interaction.
 - **Known HUD interaction.** *HUDTweaks – Fixes* lists `WBP_DIS_Prompt_New_C` in
   its fade watch list and writes the same property, so both mods manage one
   widget. Harmless in the usual case; if the prompt ends up faded when it
-  shouldn't be, set `DIS.HidePrompt = false` or drop that widget from HUDTweaks'
+  shouldn't be, set `HidePrompt = false` in `AutoQTE.ini`, or drop that widget from HUDTweaks'
   watch list. *Quiet Dawn HUD* uses the same idiom but does not target the DIS
   prompt.
 - **Input remaps are irrelevant.** AutoQTE never simulates a keypress — it calls
@@ -281,9 +291,10 @@ function was renamed, or the engine-version override is missing. Check
 `[EngineVersionOverride]` is `5` / `5`. If all four fail, UE4SS is not resolving
 game symbols at all — a UE4SS/game-version problem, not an AutoQTE one. If some
 hook and some do not, the build has changed and the mod needs re-verifying
-against it.
+against it. Any single failure unregisters the hooks that did succeed and
+disables the mod entirely — it never runs on a partial hook set.
 
-**`AutoQTE v1.0.0 loaded (0 blocklist patterns)` but nothing happens in a scene**
+**`AutoQTE v1.0.1 loaded (0 blocklist patterns)` but nothing happens in a scene**
 Either the scene is blocklisted — look for a `BLOCKED` line — or it never
 started under a class the mod recognises. If you see `scene started` but never
 `skipped:`, the prompt is not registering as pending: press the diagnose
@@ -293,7 +304,7 @@ handle it.
 
 **`BLOCKED (<entry>) - left to the player: <actor>`**
 Working as intended: that scene is on the blocklist. If you want it automated,
-remove the named entry from `BlockedScenes`.
+remove the named entry from `BlockAlso`.
 
 **`BLOCKED (unidentified scene)`**
 The mod could not read the scene's level sequence, so it could not tell whether
@@ -326,7 +337,7 @@ sees mods that loaded before AutoQTE, so a silent clash with one that loads
 later is still possible — if a key does nothing, change it.
 
 **Prompt widget stays invisible after a scene**
-Set `DIS.HidePrompt = false`. Widget opacity is restored when a scene ends, and
+Set `HidePrompt = false` in `AutoQTE.ini`. Widget opacity is restored when a scene ends, and
 a restore the engine refuses no longer poisons the stored value — but if a scene
 is torn down abnormally the restore can still be missed. Cosmetic and
 per-session; reloading a save clears it.
@@ -372,7 +383,7 @@ Re-check in this order before trusting the mod on a new build:
    identification broke and the blocklist is no longer protecting anything — the
    mod is failing safe, but it is failing.
 6. If the patch added quests or scenes, re-derive the DIS scene list and re-audit
-   the blocklist rather than assuming the old 59 still hold.
+   any `BlockAlso` patterns you added, rather than assuming they still match.
 
 ## Development
 
@@ -380,6 +391,8 @@ The mod is a single file: `Scripts/main.lua`. There is nothing to compile.
 
 ```
 Scripts/main.lua              the mod
+AutoQTE.defaults.ini          shipped reference config (installs into Scripts/)
+CHANGELOG.md                  release notes
 enabled.txt                   zero-byte marker UE4SS looks for
 README.txt / LICENSE.txt      shipped at the archive root
 tests/autoqte_regression.lua  regression suite
@@ -418,10 +431,11 @@ vendor a copy of another mod:
 python tools/check_conflict.py <mod.zip>
 ```
 
-It reports whether the mod hooks the DIS system, writes the prompt widget,
-binds F4/F5, or ships a shared UE4SS file. Those are the only four ways
-anything can collide with AutoQTE; everything else is compatible at any load
-order.
+It reports whether the mod hooks the DIS system, drives the same level-sequence
+player, writes the prompt widget, binds F4/F5, ships a shared UE4SS file,
+installs a second proxy DLL, or vendors a `Mods/shared` library. Point it at a
+release archive rather than a source checkout — mod repos vendor copies of other
+mods, which read as false positives.
 
 To build the release archive:
 

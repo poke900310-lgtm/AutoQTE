@@ -104,6 +104,7 @@ StaticFindObject = function(p)
 
 local START   = "/Script/DogwoodWorld.InteractiveSceneObject:OnInteractiveScenePlaybackStarted"
 local DONE    = "/Script/DogwoodWorld.InteractiveSceneObject:OnCompletedInteractiveSceneNotification"
+local CANCEL  = "/Script/DogwoodWorld.InteractiveSceneObject:OnCancelledInteractiveSceneNotification"
 local TRIGGER = "/Script/DogwoodWorld.DISLevelSequenceDirector:TriggerDISInteraction"
 local SEQNAME = "InteractiveSceneLevelSequence /Game/Q/DialogueInteractions/WoodChopping/LS_DIS_WoodChopping_Long"
 
@@ -111,6 +112,7 @@ local function fresh()
   out, hooks, binds, viewport, faults = {}, {}, {}, {}, 0
   FAIL_OPACITY = false; PC, NOTECLS, NOTELIB = nil, nil, nil
   assert(loadfile(target))()
+  INI = nil          -- single-use: each test sets it again before fresh()
 end
 local function logged(pat)
   for _, l in ipairs(out) do if l:find(pat, 1, true) then return l end end end
@@ -362,6 +364,76 @@ do  -- empty and junk BlockAlso entries must not disturb a real one
   hooks[START](a)
   check("a real BlockAlso survives empty ones beside it", a.completed == 0,
         "completed=" .. a.completed)
+end
+
+io.write("== V13  the ini accepts what the docs taught, and never drops a line in silence\n")
+do  -- v1.0.0's README documented DIS.HidePrompt; it must not be silently discarded
+  INI = "DIS.HidePrompt = false\n"; fresh()
+  local a, w = scene()
+  hooks[START](a)
+  check("a dotted key is honoured", w.opacity == 1.0, "opacity=" .. tostring(w.opacity))
+end
+do  -- v1.0.0's README documented quoted key names
+  INI = 'ToggleKey = "F7"\n'; fresh()
+  check("a quoted value is unquoted", binds.F7 ~= nil)
+end
+do  -- an inline comment must not become part of the value
+  INI = "ToggleKey = F7 ; my key\n"; fresh()
+  check("an inline comment is stripped", binds.F7 ~= nil)
+end
+do  -- a line that parses as nothing must still be reported
+  INI = "BlockAlso = one,\n            two, three\n"; fresh()
+  check("a continuation line is reported, not dropped", logged("not understood") ~= nil)
+end
+do  -- a UTF-8 BOM must not eat the first setting
+  INI = "\239\187\191Enabled = false\n"; fresh()
+  local a = scene()
+  hooks[START](a)
+  check("a BOM does not eat the first setting", a.completed == 0, "completed=" .. a.completed)
+end
+do  -- with no ini at all the mod must say so rather than stay silent
+  INI = nil; fresh()
+  check("a missing ini is announced", logged("using built-in defaults") ~= nil)
+end
+
+io.write("== V14  a refused restore must not hide the prompt for the rest of the session\n")
+do
+  INI = nil; fresh()
+  local w = mk{ name = "WBP_DIS_Prompt_New_C /Game/W", opacity = 1.0 }
+  local function sc(tag)
+    local s = mk{ name = "InteractiveSceneLevelSequence /Game/Q/DIS/ls_" .. tag }
+    local a = mk{ name = "BP_DIS_C /Game/M.M:PersistentLevel.BP_DIS_C_UAID_" .. tag, seq = s }
+    a.props.IsPaused = true; a.props["Action Prompt"] = w
+    return a
+  end
+  local a1 = sc("one"); hooks[START](a1)
+  FAIL_OPACITY = true                      -- the restore at scene end is refused
+  hooks[DONE](a1)
+  check("the prompt is left hidden by the refusal", w.opacity == 0.0, "opacity=" .. tostring(w.opacity))
+  local a2 = sc("two"); hooks[START](a2); hooks[DONE](a2)
+  check("the next scene recovers it", w.opacity == 1.0, "opacity=" .. tostring(w.opacity))
+end
+
+io.write("== V15  the cancel hook releases the scene and restores the prompt\n")
+do
+  INI = nil; fresh()
+  local a, w = scene()
+  hooks[START](a)
+  check("prompt hidden while the scene runs", w.opacity == 0.0, "opacity=" .. tostring(w.opacity))
+  hooks[CANCEL](a)
+  check("cancel restores the prompt", w.opacity == 1.0, "opacity=" .. tostring(w.opacity))
+  check("cancel releases the scene", logged("scene ended (cancelled)") ~= nil)
+end
+
+io.write("== V16  the diagnose key reports the identity the blocklist matches on\n")
+do
+  INI = nil; fresh()
+  local a = scene()
+  hooks[START](a)
+  binds.F5()
+  check("diagnose prints the scene identity", logged("scene: ") ~= nil)
+  check("and it is the level-sequence half, not just the actor",
+        logged("ls_dis_woodchopping_long") ~= nil)
 end
 
 io.write(string.format("\n%d passed, %d failed\n", pass, fail))

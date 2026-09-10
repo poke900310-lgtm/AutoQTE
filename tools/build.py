@@ -9,12 +9,20 @@ no directory entries, no stray files.
 """
 import hashlib
 import os
+import re
 import sys
 import time
 import zipfile
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-OUT = os.path.join(ROOT, "dist", "AutoQTE.zip")
+OUT = None   # set in main(), named after the version in main.lua
+
+def version_of(path):
+    m = re.search(r'^local VERSION = "([^"]+)"', open(path, encoding="utf-8").read(), re.M)
+    if not m:
+        raise SystemExit("cannot find VERSION in " + path)
+    return m.group(1)
+
 
 ENTRIES = [
     ("Data/AutoQTE/enabled.txt",      "enabled.txt"),
@@ -30,12 +38,28 @@ def main():
     if missing:
         sys.exit("missing source files: " + ", ".join(missing))
 
-    src = os.path.join(ROOT, "Scripts", "main.lua")
-    text = open(src, encoding="utf-8").read()
-    for flag in ("Verbose = true", "LogEveryCompletion = true"):
-        if flag in text:
-            sys.exit("refusing to ship with %s - reset it in Scripts/main.lua" % flag)
+    # Debug flags must be off in BOTH shipped files. AutoQTE.defaults.ini is not a
+    # reference copy - main.lua reads it at runtime, so it OVERRIDES the Lua defaults.
+    # Match the parsed value, not a substring: "Verbose=true" is the same setting.
+    for rel in ("Scripts/main.lua", "AutoQTE.defaults.ini"):
+        text = open(os.path.join(ROOT, rel), encoding="utf-8").read()
+        for flag in ("Verbose", "LogEveryCompletion"):
+            if re.search(r"^\s*%s\s*=\s*true(?![A-Za-z0-9_])" % flag, text, re.M | re.I):
+                sys.exit("refusing to ship with %s enabled in %s" % (flag, rel))
 
+    version = version_of(os.path.join(ROOT, "Scripts", "main.lua"))
+    for rel in ("README.md", "README.txt"):
+        doc = open(os.path.join(ROOT, rel), encoding="utf-8").read()
+        stale = {v for v in re.findall(r"AutoQTE v?(\d+\.\d+\.\d+)", doc)} - {version}
+        if version not in doc:
+            sys.exit("%s never mentions version %s" % (rel, version))
+        if stale:
+            sys.exit("%s still mentions version(s) %s; main.lua says %s"
+                     % (rel, ", ".join(sorted(stale)), version))
+
+    # Vortex reads a mod's version from the archive filename, so put it there.
+    global OUT
+    OUT = os.path.join(ROOT, "dist", "AutoQTE-%s.zip" % version)
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     if os.path.exists(OUT):
         os.remove(OUT)
@@ -49,7 +73,8 @@ def main():
             z.writestr(info, open(path, "rb").read())
 
     with zipfile.ZipFile(OUT) as z:
-        assert z.testzip() is None, "archive failed its integrity check"
+        if z.testzip() is not None:
+            raise SystemExit("archive failed its integrity check")
         print(OUT)
         for i in z.infolist():
             digest = hashlib.md5(z.read(i.filename)).hexdigest()

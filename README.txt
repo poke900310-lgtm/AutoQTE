@@ -1,5 +1,5 @@
 ================================================================================
-AutoQTE v1.0.0  -  The Blood of Dawnwalker
+AutoQTE v1.0.1  -  The Blood of Dawnwalker
 An UNOFFICIAL fan-made mod. Not affiliated with or endorsed by Rebel Wolves.
 Auto-resolves quick-time prompts in Dialogue Interaction Scenes.
 ================================================================================
@@ -28,7 +28,8 @@ BlockAlso. Uncomment it, trim it, or ignore it.
 
 A scene the mod cannot positively identify is always left alone, on purpose.
 
-It is a Lua-only UE4SS mod: one script, no DLL, no pak, no assets. Two files.
+It is a Lua-only UE4SS mod: one script plus a reference ini and a marker
+file. No DLL, no pak, no assets.
 See CONFLICTS below for exactly what it hooks.
 
 
@@ -116,11 +117,13 @@ CONTROLS
         it on again and the next prompt in that same scene is resolved.
   F5    print diagnostics for the current scene
 
-Configurable at the top of main.lua:
+Set in AutoQTE.ini (copy AutoQTE.defaults.ini beside main.lua):
 
-    Keys = { Toggle = "F4", Diagnose = "F5" },
+    ToggleKey = F4
+    DiagnoseKey = F5
 
-Any key name UE4SS knows; "" disables that bind. F4 and F5 were chosen because
+Any key name UE4SS knows, written without quotes; an empty value disables that
+bind. F4 and F5 were chosen because
 nothing else in this game's mod ecosystem was found using them. Claimed by other
 mods for this game: F1, F2, F3 (DawnWALKING), F6 (UE4SS Cheat Menu, Vampire Form
 Toggle), F7/F8/F9/F10 (HUDTweaks - Fixes).
@@ -151,31 +154,13 @@ Settings are read once at startup. Restart the game after editing.
   Verbose              Also write AutoQTE.log beside main.lua.
   LogEveryCompletion   One line per prompt. Noisy; for diagnosing one scene.
 
-The same values also appear in the Config table at the top of main.lua, which
-is what the ini overrides.
+Those are all of them. main.lua carries the same values as built-in defaults,
+but you never need to edit it - the ini overrides them.
 
-  DIS.Enabled          Master switch for the auto-resolve behaviour.
-
-  DIS.HidePrompt       Fade the prompt ring out so nothing flashes on screen.
-                       Default true. Purely cosmetic; the prompt is resolved
-                       either way.
-
-  BlockedScenes        Empty by default; see BlockAlso. Each
-                       entry is a lowercase substring matched against the
-                       scene's actor path and its level sequence path, with a
-                       comment recording why that scene is on the list. Add
-                       your own freely.
-
-  Keys                 Keybinds, see CONTROLS.
-
-  Verbose              Default false. Set true to also write AutoQTE.log next
-                       to main.lua. Output always reaches UE4SS.log regardless.
-
-  LogEveryCompletion   Default false. Set true for per-prompt tracing when
-                       diagnosing a scene that misbehaves.
-
-NOTE: your settings live inside main.lua, so UPDATING THE MOD OVERWRITES THEM.
-Back up main.lua first if you have edited the blocklist or keys.
+NOTE: your settings live in AutoQTE.ini, which is NOT in the archive and is
+never overwritten. An update replaces main.lua and AutoQTE.defaults.ini only.
+Update by overwriting the folder in place - do not delete it first, or you will
+delete your own AutoQTE.ini along with it.
 
 
 --------------------------------------------------------------------------------
@@ -227,7 +212,7 @@ hook and what they replace. AutoQTE declares all of it:
           conflict with any asset-replacing mod, at any load order.
 
   Widget: one, and only while a scene is being skipped. With
-          DIS.HidePrompt = true (the default) AutoQTE sets RenderOpacity on
+          HidePrompt = true (the default) AutoQTE sets RenderOpacity on
           the live WBP_DIS_Prompt_New_C prompt widget and puts it back when
           the scene ends. It only ever undoes its OWN write - if another mod
           changed that value in the meantime, that mod's value stands.
@@ -242,7 +227,7 @@ HUD mods that manage the DIS prompt widget:
   watch list and writes RenderOpacity to it, so both mods end up managing one
   widget. AutoQTE will not overwrite a value HUDTweaks set, which makes the
   usual outcome harmless. If the prompt ever ends up faded when it should not
-  be, set DIS.HidePrompt = false here, or drop WBP_DIS_Prompt_New_C from
+  be, set HidePrompt = false in AutoQTE.ini, or drop WBP_DIS_Prompt_New_C from
   HUDTweaks' watch list. Either one settles it.
 
   Quiet Dawn HUD uses the same capture-and-restore idiom on HUD widgets but
@@ -287,7 +272,9 @@ GAME VERSION
 --------------------------------------------------------------------------------
 
 Verified on:  dw1-pc-256181-shipping-patch2-all-CL-256181  (UE 5.5.4)
-              dw1-pc-257186-shipping-patch2-all-CL-257186  (UE 5.5.4)
+              dw1-pc-258042-shipping-patch2-all-CL-258042  (UE 5.5.4)
+
+CL-257186 was also used during development but is no longer available here.
 
 The mod identifies everything by NAME, not by memory address, so it is not tied
 to a storefront and should carry across builds. If a game update renames the
@@ -308,7 +295,7 @@ prefixed [Lua] [AutoQTE].
   If ue4ss\UE4SS.log does not exist at all
         UE4SS is not installed or is not loading. Nothing below applies.
 
-  "AutoQTE v1.0.0 loaded (0 blocklist patterns)"
+  "AutoQTE v1.0.1 loaded (0 blocklist patterns)"
         The mod loaded. If this line is missing, it did not.
 
   "hooked ..."  x4
@@ -345,7 +332,7 @@ prefixed [Lua] [AutoQTE].
 
   "F4 is already claimed by another mod - not binding"
         A keybind collision. The other mod keeps the key; AutoQTE binds
-        nothing. Change Keys at the top of main.lua.
+        nothing. Change ToggleKey / DiagnoseKey in AutoQTE.ini.
 
   "F4 is not a key name UE4SS knows - not binding"
         Typo in Keys. Use a UE4SS key name, e.g. "F4", "HOME", "NUM_LOCK".

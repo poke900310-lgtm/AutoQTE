@@ -39,8 +39,29 @@ MUTANTS = [
      'if hiddenWidget and isAlive(hiddenWidget)\n       and addressOf',
      'if hiddenWidget and (true)\n       and addressOf'),
     ("latch_guard_gone",
-     '    local was = prev\n    if restored then was = getScalar(w, "RenderOpacity") end',
-     '    local was = getScalar(w, "RenderOpacity")'),
+     'if not restored and was == 0.0 then was = prev end',
+     'if false then was = prev end'),
+    ("restore_latch_dropped_on_refusal",
+     '    if restored then\n        hiddenWidget, hiddenName, hiddenAddr, hiddenOpacity = nil, nil, nil, nil\n    end',
+     '    hiddenWidget, hiddenName, hiddenAddr, hiddenOpacity = nil, nil, nil, nil'),
+    ("ini_line_dropped_silently",
+     'elseif line:match("%S") then',
+     'elseif false then'),
+    ("ini_dotted_key_rejected",
+     '("^%s*([%w_.]+)%s*=%s*(.-)%s*$")',
+     '("^%s*([%w_]+)%s*=%s*(.-)%s*$")'),
+    ("ini_quotes_not_stripped",
+     """v = v:match('^"(.*)"$') or v:match("^'(.*)'$") or v""",
+     'v = v'),
+    ("ini_bom_not_stripped",
+     'body = body:gsub("^\\239\\187\\191", "")',
+     'body = body'),
+    ("diagnose_omits_scene",
+     'log("scene: %s", sceneIdentity(actor) or "<unidentified>")',
+     'local _ = actor'),
+    ("cancel_hook_inert",
+     'if sameActor(a, scene) then endScene("cancelled") end',
+     'local _ = a'),
     ("complete_result_ignored",
      'if not (call(actor, "CompleteCurrentPrompt")) then',
      'if false then call(actor, "CompleteCurrentPrompt") ; end if false then'),
@@ -66,6 +87,9 @@ def main():
     lua = sys.argv[1]
     base = open(SRC, encoding="utf-8", newline="").read()
     os.makedirs(OUT, exist_ok=True)
+    for stale in os.listdir(OUT):                 # a renamed entry must not leave dead files
+        if stale.endswith(".lua") and stale[:-4] not in {m[0] for m in MUTANTS}:
+            os.remove(os.path.join(OUT, stale))
 
     if subprocess.call([lua, SUITE, SRC], stdout=subprocess.DEVNULL) != 0:
         sys.exit("the suite does not pass on unmutated source; fix that first")

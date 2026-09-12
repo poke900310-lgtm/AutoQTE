@@ -4,7 +4,7 @@ Auto-resolves the game's DIS quick-time prompts (the button-press and
 tap-repeatedly interactions) so they play out on their own. An optional
 blocklist lets you keep any scenes you would rather perform yourself.
 
-- **Version:** 1.0.1
+- **Version:** 1.0.2
 - **Game:** The Blood of Dawnwalker — verified on `dw1-pc-256181-shipping-patch2-all` (CL-256181) and `dw1-pc-258042-shipping-patch2-all` (CL-258042), both UE 5.5.4
 - **Requires:** a Dawnwalker-compatible [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) 3.x install, already working
 - **Type:** Lua mod. No pak, no asset replacement, no Blueprint hooks, no shared library.
@@ -210,19 +210,15 @@ F4 and F5 were picked because almost everything else is taken on this game:
 | F12 | Cheat Menu, and Steam's screenshot key |
 
 Each entry is a UE4SS key name written **without quotes** — `ToggleKey = F4`,
-`ToggleKey = INSERT`, `ToggleKey = NUM_FIVE`. Leave the value empty to register
+`ToggleKey = INS`, `ToggleKey = NUM_FIVE`. Leave the value empty to register
 no bind at all. Modifier combinations are not supported.
 
 F1, F2 and F3 are claimed by DawnWALKING on this game, so they make poor
-alternates; prefer something unused like `"INSERT"` or `"HOME"` if F4 or F5
+alternates; prefer something unused like `"INS"` or `"HOME"` if F4 or F5
 clash on your setup.
 
 UE4SS's own binds are all `Ctrl` combos and do not collide.
 
----|---|---|
-| `Enabled` | `true` | Master switch. The toggle key flips it at runtime, in either direction, mid-scene: switch off and the live prompt returns for you to play, switch on and the next prompt in that same scene is resolved. Not persisted — restarting restores this value. |
-| `Verbose` | `false` | Also write the mod's log lines to `AutoQTE.log` beside `main.lua`. With this off the same lines still reach the UE4SS console and `UE4SS.log`. |
-| `LogEveryCompletion` | `false` | Adds a line per individual prompt plus trigger state. Noisy; for diagnosing one misbehaving scene. |
 
 ---
 
@@ -294,7 +290,7 @@ hook and some do not, the build has changed and the mod needs re-verifying
 against it. Any single failure unregisters the hooks that did succeed and
 disables the mod entirely — it never runs on a partial hook set.
 
-**`AutoQTE v1.0.1 loaded (0 blocklist patterns)` but nothing happens in a scene**
+**`AutoQTE v1.0.2 loaded (0 blocklist patterns)` but nothing happens in a scene**
 Either the scene is blocklisted — look for a `BLOCKED` line — or it never
 started under a class the mod recognises. If you see `scene started` but never
 `skipped:`, the prompt is not registering as pending: press the diagnose
@@ -331,8 +327,8 @@ The keybind API did not answer, or refused the bind. AutoQTE leaves the key
 alone rather than risk taking it from another mod. Auto-resolving still works;
 only the key is missing.
 
-**`F4 is already claimed by another mod - not binding; change Config.Keys`**
-Exactly what it says. Pick a different key in the `Keys` table. This check only
+**`F4 is already claimed by another mod - not binding; change it in AutoQTE.ini`**
+Exactly what it says. Pick a different key with `ToggleKey` in `AutoQTE.ini`. This check only
 sees mods that loaded before AutoQTE, so a silent clash with one that loads
 later is still possible — if a key does nothing, change it.
 
@@ -397,7 +393,7 @@ enabled.txt                   zero-byte marker UE4SS looks for
 README.txt / LICENSE.txt      shipped at the archive root
 tests/autoqte_regression.lua  regression suite
 tests/mutants.py              proves the suite can actually fail
-tools/build.py                assembles dist/AutoQTE.zip
+tools/build.py                assembles dist/AutoQTE-<version>.zip
 ```
 
 Run the suite against any copy of the mod — a working tree, or the file in a

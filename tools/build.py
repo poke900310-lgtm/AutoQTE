@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
-r"""Build AutoQTE.zip in the layout Vortex's "UE4SS (Lua mods)" type expects.
+r"""Build the release archive in the layout Vortex's "UE4SS (Lua mods)" type expects.
 
-    python tools/build.py            -> dist/AutoQTE.zip
+    python tools/build.py            -> dist/AutoQTE-<version>.zip
 
 Data/ is what gets deployed into ue4ss\Mods\; README.txt and LICENSE.txt sit
 at the archive root so they stay out of the game folder. Forward slashes only,
 no directory entries, no stray files.
 """
+import glob
 import hashlib
 import os
 import re
@@ -44,8 +45,13 @@ def main():
     for rel in ("Scripts/main.lua", "AutoQTE.defaults.ini"):
         text = open(os.path.join(ROOT, rel), encoding="utf-8").read()
         for flag in ("Verbose", "LogEveryCompletion"):
-            if re.search(r"^\s*%s\s*=\s*true(?![A-Za-z0-9_])" % flag, text, re.M | re.I):
-                sys.exit("refusing to ship with %s enabled in %s" % (flag, rel))
+            # Parse the value the way applyIni does: optional dis. prefix, inline
+            # comment, quotes - then test every spelling toBool() accepts.
+            for m in re.finditer(r"^\s*(?:DIS\.)?%s\s*=\s*(.*)$" % flag, text, re.M | re.I):
+                val = re.sub(r"\s+[;#].*$", "", m.group(1)).strip().strip(";#").strip()
+                val = val.strip('"').strip("'").strip().lower()
+                if val in ("true", "1", "yes", "on"):
+                    sys.exit("refusing to ship with %s enabled in %s" % (flag, rel))
 
     version = version_of(os.path.join(ROOT, "Scripts", "main.lua"))
     for rel in ("README.md", "README.txt"):
@@ -63,6 +69,13 @@ def main():
     os.makedirs(os.path.dirname(OUT), exist_ok=True)
     if os.path.exists(OUT):
         os.remove(OUT)
+
+    # Only one archive may sit in dist/. Attaching last release's zip to a new
+    # tag is a mistake you cannot take back once anyone has downloaded it.
+    for stale_zip in glob.glob(os.path.join(ROOT, "dist", "AutoQTE-*.zip")):
+        if os.path.abspath(stale_zip) != os.path.abspath(OUT):
+            os.remove(stale_zip)
+            print("removed stale %s" % os.path.basename(stale_zip))
 
     with zipfile.ZipFile(OUT, "w", zipfile.ZIP_DEFLATED) as z:
         for arc, rel in ENTRIES:

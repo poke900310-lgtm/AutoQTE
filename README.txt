@@ -273,8 +273,9 @@ KNOWN ISSUES THAT ARE NOT THIS MOD
 GAME VERSION
 --------------------------------------------------------------------------------
 
-Verified on:  dw1-pc-256181-shipping-patch2-all-CL-256181  (UE 5.5.4)
+Verified on:  Steam build 25232147, the 12 September 2026 patch (UE 5.5.4)
               dw1-pc-258042-shipping-patch2-all-CL-258042  (UE 5.5.4)
+              dw1-pc-256181-shipping-patch2-all-CL-256181  (UE 5.5.4)
 
 CL-257186 was also used during development but is no longer available here.
 

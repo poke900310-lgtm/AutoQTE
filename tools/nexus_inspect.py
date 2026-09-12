@@ -7,13 +7,17 @@ Reads the key from NEXUS_API_KEY, or from a .nexus-key file beside the repo root
 (gitignored). Makes no writes of any kind - only GETs, plus the documented POST
 batch lookups, which are reads despite the verb.
 
-What the v3 API can show: name, summary, status, thumbnail, adult flag, the file
-list with categories and versions, and the authored requirements.
+v3 gives the name, summary, status, thumbnail, adult flag, the file list with
+categories and versions, and the authored requirements. It has no page fields at
+all - the live spec at https://api.nexusmods.com/openapi.yaml is 31 endpoints and
+none of them return a description, endorsements, downloads or categories.
 
-What it cannot: the description body, the image gallery, endorsements, download
-counts, categories, tags, permissions or credits. Those are not in the v3 spec,
-so a clean report here does not mean the page reads well - only that its
-machine-visible parts are right.
+Legacy v1 still serves those and takes the same apikey header, so the page-fields
+section reads from it instead.
+
+Neither exposes the image gallery, tags, permissions or credits. A clean report
+here does not mean the page reads well - only that its machine-visible parts are
+right.
 """
 import json
 import os
@@ -106,6 +110,37 @@ def main():
             if d or dlc:
                 print("        requirements: %d version-range, %d dlc" % (len(d), len(dlc)))
 
+    head("page fields (legacy v1 - not in the v3 spec)")
+    # v3 carries no description, endorsements, downloads or categories. v1 still
+    # serves them and takes the same apikey header. Printed from what it actually
+    # returns rather than from assumed field names.
+    v1 = "https://api.nexusmods.com/v1/games/%s/mods/%s.json" % (GAME, MOD)
+    req = urllib.request.Request(v1)
+    req.add_header("apikey", k)
+    req.add_header("Accept", "application/json")
+    KNOWN = ("name", "version", "author", "uploaded_by", "summary", "status",
+             "available", "category_id", "endorsement_count", "mod_downloads",
+             "mod_unique_downloads", "picture_url", "created_time", "updated_time",
+             "contains_adult_content", "allow_rating")
+    try:
+        with urllib.request.urlopen(req) as r:
+            d = json.loads(r.read())
+        for f in KNOWN:
+            if f in d:
+                v = d[f]
+                if f == "summary" and v:
+                    v = str(v)[:70] + ("..." if len(str(v)) > 70 else "")
+                print("  %-22s %s" % (f, v if v not in (None, "") else "(empty)"))
+        desc = d.get("description") or ""
+        print("  %-22s %d chars" % ("description", len(desc)))
+        if desc:
+            print("  %-22s %s" % ("starts", " ".join(desc.split())[:70] + "..."))
+        extra = sorted(set(d) - set(KNOWN) - {"description"})
+        if extra:
+            print("  %-22s %s" % ("other fields", ", ".join(extra)))
+    except urllib.error.HTTPError as e:
+        print("  ! v1 mod -> %d  %s" % (e.code, e.read().decode("utf-8", "replace")[:200]))
+
     head("public feed")
     req = urllib.request.Request(API + "/games/%s/trending-mods" % GAME)
     req.add_header("Accept", "application/json")
@@ -117,8 +152,8 @@ def main():
     except urllib.error.HTTPError as e:
         print("  ! trending-mods -> %d" % e.code)
 
-    print("\nNot visible through this API: description body, image gallery,")
-    print("endorsements, downloads, categories, tags, permissions, credits.")
+    print("\nStill not visible: the image gallery, tags, permissions and credits.")
+    print("v3 has none of the page fields; the section above comes from legacy v1.")
 
 
 if __name__ == "__main__":

@@ -23,6 +23,11 @@ SUITE = os.path.join(ROOT, "tests", "autoqte_regression.lua")
 OUT = os.path.join(ROOT, "tests", "mut")
 
 MUTANTS = [
+    ("blockalso_reads_the_unquoted_value",
+     'for pat in raw:gmatch("[^,]+") do', 'for pat in v:gmatch("[^,]+") do'),
+    ("comment_strip_truncates_a_bare_hash",
+     'v = v:gsub("%s+[;#].*$", ""):gsub("[;#]+$", "")',
+     'v = v:gsub("%s*[;#].*$", "")'),
     ("blocklist_never_matches",
      'if id:find(pat, 1, true) then return pat end', 'if false then return pat end'),
     ("paused_test_weakened",

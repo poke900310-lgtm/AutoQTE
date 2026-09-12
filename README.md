@@ -1,11 +1,18 @@
 # AutoQTE — The Blood of Dawnwalker
 
+I made this mod because devs putting in unnecessary button prompts is the
+continuing bane of my existence.
+
 Auto-resolves the game's DIS quick-time prompts (the button-press and
-tap-repeatedly interactions) so they play out on their own. An optional
-blocklist lets you keep any scenes you would rather perform yourself.
+tap-repeatedly interactions) so they play out on their own. The scene is not
+skipped and nothing is faked: the mod calls the game's own
+`CompleteCurrentPrompt`, the same function your keypress calls, so the scene
+ends in the Completed state and every quest node downstream sees exactly what
+it expects. An optional blocklist lets you keep any scenes you would rather
+perform yourself.
 
 - **Version:** 1.0.3
-- **Game:** The Blood of Dawnwalker — verified on `dw1-pc-256181-shipping-patch2-all` (CL-256181) and `dw1-pc-258042-shipping-patch2-all` (CL-258042), both UE 5.5.4
+- **Game:** The Blood of Dawnwalker, UE 5.5.4 — verified on Steam build `25232147` (12 September 2026 patch), and before it on `dw1-pc-256181-shipping-patch2-all` (CL-256181) and `dw1-pc-258042-shipping-patch2-all` (CL-258042)
 - **Requires:** a Dawnwalker-compatible [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) 3.x install, already working
 - **Type:** Lua mod. No pak, no asset replacement, no Blueprint hooks, no shared library.
 - **Touches:** nothing outside its own mod folder. No saves, no game settings, no other mod's files.

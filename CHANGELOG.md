@@ -1,3 +1,28 @@
+## 1.0.2
+
+Fixed
+- `BlockAlso` no longer fails open on the quoted form the README documents.
+  `BlockAlso = "a", "b"` had the whole value unquoted before it was split on
+  commas, producing the patterns `a"` and `"b` - which match nothing - while
+  the mod still logged "2 blocklist patterns". The items are now unquoted
+  individually, so a scene the user explicitly protected is actually protected.
+- An inline-comment strip no longer truncates a value at a bare `;` or `#`.
+  `BlockAlso = alpha#beta` became the pattern `alpha`, a *broader* substring
+  that blocked scenes the user never named, and every pattern after the marker
+  was dropped silently. A comment is now only recognised after whitespace.
+- `(previous line xN)` reaches `AutoQTE.log` again; 1.0.1 emitted it through a
+  bare `print` that never touched the log file.
+- The ini parser no longer backtracks quadratically on a long whitespace run.
+
+Tooling and documentation
+- `tools/build.py` refused to ship only on the literal `true`; it now parses the
+  value the way the mod does and catches `1`, `yes`, `on`, `"true"` and `DIS.`
+  forms - all of which the 1.0.1 parser accepts.
+- `README.md` shipped a headerless table fragment that GitHub rendered as a run
+  of pipe characters in the Keybinds section.
+- The documented key name `INSERT` is not a name UE4SS knows; it is `INS`.
+- `README.txt` now carries the Xbox / Game Pass `Binaries\WinGDK` path.
+
 # Changelog
 
 Notable changes to AutoQTE. Versions follow SemVer.

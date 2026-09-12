@@ -1,23 +1,16 @@
 -- AutoQTE regression suite.
 --   usage: lua54.exe autoqte_regression.lua <path to main.lua>
 --
--- Every assertion here has been shown to fail against a targeted mutation of
--- main.lua (13 of 14 mutants killed; see mut/ for the battery). The one mutant
--- that survives is getScalar's type filter: every consumer of getScalar guards
--- the value again (`== true`, `type(was) == "number"`), so removing the filter
--- has no independently observable effect. It is defence-in-depth, not dead
--- code, and it cannot be covered without a second observable.
+-- Contract: every assertion here must be killable. tests/mutants.py breaks one
+-- behaviour at a time and each mutant must turn this suite red; a SURVIVED line
+-- there means an assertion is not constraining what its name claims.
 --
---
--- Supersedes h3-h10. Those predate the removal of the on-screen notice:
--- h10's 10 notice assertions and h8's 4 FindFirstOf/StaticFindObject
--- assertions now fail by design, because the feature and both globals are
--- gone. h4 has always failed on every input. harness.lua and h9 still pass.
--- The stubs deliberately return a truthy phantom for absent UObject members,
--- as UE4SS does. Read members with rawget inside this file, never `self.x`.
+-- The stubs return a truthy phantom for absent UObject members, as UE4SS does.
+-- Read members with rawget inside this file, never self.x, or a test can pass
+-- by comparing two phantoms.
 local target = ...
 
-local out, faults, viewport = {}, 0, {}
+local out, faults = {}, 0
 local FAIL_OPACITY = false
 print = function(s) out[#out+1] = tostring(s):gsub("\n$","") end
 INI = nil   -- per-test AutoQTE.ini contents, or nil for "no file"
@@ -59,14 +52,6 @@ local function mk(spec)
       if self.freed then faults = faults + 1; error("ACCESS VIOLATION: SetRenderOpacity on freed") end
       if FAIL_OPACITY then FAIL_OPACITY = false; error("SetRenderOpacity refused by the engine") end
       self.opacity = v end
-  M.UpdateSubtitle   = function(self, t)
-      if rawget(self, "UpdateSubtitleFails") then error("UpdateSubtitle refused") end
-      self.text = t end
-  M.AddToViewport    = function(self)
-      self.adds = (rawget(self, "adds") or 0) + 1; viewport[self] = true end
-  M.RemoveFromParent = function(self)
-      if rawget(self, "RemoveFails") then error("RemoveFromParent refused") end
-      viewport[self] = nil end
   if not spec.noComplete then
     M.CompleteCurrentPrompt = function(self)
         self.completed = self.completed + 1
@@ -74,7 +59,6 @@ local function mk(spec)
         local cb = rawget(self, "onComplete")
         if cb then cb(self) end end
   end
-  if spec.create then M.Create = function(self, w, c, p) return spec.create() end end
   return setmetatable(o, {__index = function(t, k)
       if M[k] then return M[k] end
       local p = rawget(t, "props")
@@ -95,12 +79,6 @@ Key = setmetatable({}, {__index = function(t, k)
     if type(k) ~= "string" or not k:match("^F%d+$") then return nil end
     kc = kc + 1; rawset(t, k, kc); keyname[kc] = k; return kc end})
 FindAllOf = function() return {} end
-local PC, NOTECLS, NOTELIB
-FindFirstOf = function() return PC end
-StaticFindObject = function(p)
-    if p:find("WBP_MovieSubtitle", 1, true) then return NOTECLS end
-    if p:find("WidgetBlueprintLibrary", 1, true) then return NOTELIB end
-    return nil end
 
 local START   = "/Script/DogwoodWorld.InteractiveSceneObject:OnInteractiveScenePlaybackStarted"
 local DONE    = "/Script/DogwoodWorld.InteractiveSceneObject:OnCompletedInteractiveSceneNotification"
@@ -109,8 +87,8 @@ local TRIGGER = "/Script/DogwoodWorld.DISLevelSequenceDirector:TriggerDISInterac
 local SEQNAME = "InteractiveSceneLevelSequence /Game/Q/DialogueInteractions/WoodChopping/LS_DIS_WoodChopping_Long"
 
 local function fresh()
-  out, hooks, binds, viewport, faults = {}, {}, {}, {}, 0
-  FAIL_OPACITY = false; PC, NOTECLS, NOTELIB = nil, nil, nil
+  out, hooks, binds, faults = {}, {}, {}, 0
+  FAIL_OPACITY = false
   assert(loadfile(target))()
   INI = nil          -- single-use: each test sets it again before fresh()
 end
@@ -380,6 +358,27 @@ end
 do  -- an inline comment must not become part of the value
   INI = "ToggleKey = F7 ; my key\n"; fresh()
   check("an inline comment is stripped", binds.F7 ~= nil)
+end
+do  -- the README's quoted BlockAlso form must actually block, not just count
+  INI = 'BlockAlso = "takerabbit", "woodchopping"\n'; fresh()
+  local a = scene{ seqName = "InteractiveSceneLevelSequence /Game/Q/DIS/LS_takerabbit_DIS" }
+  hooks[START](a)
+  check("a quoted BlockAlso item blocks rather than fails open", a.completed == 0,
+        "completed=" .. a.completed)
+end
+do  -- a bare ; or # is part of the value: truncating it BROADENS the pattern
+  INI = "BlockAlso = takerabbit#stew\n"; fresh()
+  local a = scene{ seqName = "InteractiveSceneLevelSequence /Game/Q/DIS/LS_takerabbit_DIS" }
+  hooks[START](a)
+  check("a # inside a value does not truncate it into a broader pattern",
+        a.completed == 1, "completed=" .. a.completed)
+end
+do  -- ...while a real inline comment after whitespace is still removed
+  INI = "BlockAlso = takerabbit ; my note\n"; fresh()
+  local a = scene{ seqName = "InteractiveSceneLevelSequence /Game/Q/DIS/LS_takerabbit_DIS" }
+  hooks[START](a)
+  check("an inline comment after whitespace is still stripped from BlockAlso",
+        a.completed == 0, "completed=" .. a.completed)
 end
 do  -- a line that parses as nothing must still be reported
   INI = "BlockAlso = one,\n            two, three\n"; fresh()

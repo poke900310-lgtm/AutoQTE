@@ -3,7 +3,7 @@
 
     python tools/check_conflict.py <mod.zip | mod-folder> [...]
 
-AutoQTE touches exactly four things, so only four questions matter:
+AutoQTE touches a handful of things, so only these questions matter:
 
   1. Does it hook the same UFunctions?          -> mutually exclusive
   2. Does it write the DIS prompt widget?       -> shared widget, needs a note
@@ -40,7 +40,7 @@ SEQUENCE = ("LevelSequencePlayer", "MovieSceneSequencePlayer", "SetPlayRate",
 PROXY = ("version.dll", "winmm.dll", "dinput8.dll", "dsound.dll", "d3d11.dll",
          "d3d12.dll", "xinput1_3.dll", "xinput1_4.dll", "bink2w64.dll")
 OURKEYS = ("F4", "F5")
-TEXT_EXT = (".lua", ".ini", ".txt", ".json", ".cfg")
+TEXT_EXT = (".lua", ".ini", ".txt", ".md", ".json", ".cfg")
 
 
 def read_members(target):
@@ -89,7 +89,7 @@ def check(target):
         for token in HOOKS:
             if token in text and not doc_only:      # prose is not behaviour
                 hooks.add(token)
-        if HOOK_RE.search(text):
+        if HOOK_RE.search(text) and not doc_only:
             hooks.add("BP_DIS")
         for token in WIDGET:
             if token in text and not doc_only:

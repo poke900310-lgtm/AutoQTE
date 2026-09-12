@@ -3,7 +3,7 @@
 -- F4 toggle | F5 diagnose   (F10 is the game console, bound by ConsoleEnablerMod)
 -- Console commands do not work in this title (ProcessConsoleExec unavailable).
 
-local VERSION = "1.0.1"
+local VERSION = "1.0.2"
 
 local Config = {
     Enabled = true,
@@ -72,21 +72,25 @@ local LOG = (debug.getinfo(1, "S").source:match("^@(.*[/\\])") or "") .. "AutoQT
 
 local logFile, lastMsg, reps = nil, nil, 0
 
+local function emit(msg)
+    print("[AutoQTE] " .. msg .. "\n")
+    if Config.Verbose and logFile ~= false then
+        if not logFile then
+            local okf, f = pcall(io.open, LOG, "a")
+            logFile = (okf and f) or false      -- false = tried and failed, never retry
+            if not logFile then print("[AutoQTE] could not open " .. LOG .. "\n") end
+        end
+        if logFile then logFile:write(msg .. "\n"); logFile:flush() end
+    end
+end
+
 local function log(fmt, ...)
     local ok, msg = pcall(string.format, fmt, ...)
     if not ok then msg = tostring(fmt) end
     if msg == lastMsg then reps = reps + 1; return end
     lastMsg = msg
-    if reps > 0 then print(string.format("[AutoQTE] (previous line x%d)\n", reps + 1)); reps = 0 end
-    print("[AutoQTE] " .. msg .. "\n")
-    if Config.Verbose and logFile ~= false then
-        if not logFile then
-            local okf, f = pcall(io.open, LOG, "a")
-            logFile = (okf and f) or false          -- false = tried and failed, never retry
-            if logFile == false then print("[AutoQTE] could not open " .. LOG .. "\n") end
-        end
-        if logFile then logFile:write(msg .. "\n"); logFile:flush() end
-    end
+    if reps > 0 then emit(string.format("(previous line x%d)", reps + 1)); reps = 0 end
+    emit(msg)
 end
 
 -- Settings live in AutoQTE.ini beside this script, so a mod update cannot
@@ -123,14 +127,19 @@ local function applyIni()
     body = body:gsub("^\239\187\191", "")            -- a UTF-8 BOM would eat the first setting
     local set, bad = 0, 0
     for line in body:gmatch("[^\r\n]+") do
+        -- Collapse whitespace runs first: the trims below are O(n^2) on a long one.
+        line = line:gsub("[ \t]+", " ")
         if not line:match("^%s*[;#%[]") then
             -- Accept a dotted key: v1.0.0 documented DIS.HidePrompt.
             local k, v = line:match("^%s*([%w_.]+)%s*=%s*(.-)%s*$")
             if k then
-                v = v:gsub("%s*[;#].*$", "")                        -- inline comment
+                -- Inline comment only after whitespace: a bare ; or # is part of
+                -- the value, so BlockAlso = alpha#beta cannot truncate to alpha.
+                v = v:gsub("%s+[;#].*$", ""):gsub("[;#]+$", "")
+                local raw = v                                      -- BlockAlso unquotes per item
                 v = v:match('^"(.*)"$') or v:match("^'(.*)'$") or v  -- README showed quotes
-                local key, b = k:lower():gsub("^dis%.", ""), nil
-                if v ~= "" then b = toBool(v) end
+                local key = k:lower():gsub("^dis%.", "")   -- one name: gsub's count is dropped
+                local b = toBool(v)                        -- "" yields nil, same as no value
                 if     key == "enabled"            and b ~= nil then Config.Enabled = b;              set = set + 1
                 elseif key == "hideprompt"         and b ~= nil then Config.DIS.HidePrompt = b;       set = set + 1
                 elseif key == "verbose"            and b ~= nil then Config.Verbose = b;              set = set + 1
@@ -138,8 +147,10 @@ local function applyIni()
                 elseif key == "togglekey"          then Config.Keys.Toggle = v;                       set = set + 1
                 elseif key == "diagnosekey"        then Config.Keys.Diagnose = v;                     set = set + 1
                 elseif key == "blockalso"          then
-                    for pat in v:gmatch("[^,]+") do
-                        pat = pat:match("^%s*(.-)%s*$"):lower()
+                    for pat in raw:gmatch("[^,]+") do
+                        pat = pat:match("^%s*(.-)%s*$")
+                        -- per item: a whole-value unquote turns '"a", "b"' into junk
+                        pat = (pat:match('^"(.*)"$') or pat:match("^'(.*)'$") or pat):lower()
                         if pat ~= "" then
                             Config.BlockedScenes[#Config.BlockedScenes + 1] = pat
                             set = set + 1

@@ -1,3 +1,13 @@
+## 1.0.4
+
+Minor documentation adjustments. No code changes: `Scripts/main.lua` is
+identical to 1.0.3 apart from the version string.
+
+- The shipped `README.txt` lists Steam build 25232147 among the verified builds;
+  the 1.0.3 archive named only the two builds that preceded the 12 September
+  patch.
+- `README.md` links the Nexus page.
+
 ## 1.0.3
 
 Documentation and release tooling on top of 1.0.2. No behaviour changes: the

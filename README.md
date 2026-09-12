@@ -12,7 +12,7 @@ it expects. An optional blocklist lets you keep any scenes you would rather
 perform yourself.
 
 - **Nexus:** <https://www.nexusmods.com/thebloodofdawnwalker/mods/456>
-- **Version:** 1.0.3
+- **Version:** 1.0.4
 - **Game:** The Blood of Dawnwalker, UE 5.5.4 — verified on Steam build `25232147` (12 September 2026 patch), and before it on `dw1-pc-256181-shipping-patch2-all` (CL-256181) and `dw1-pc-258042-shipping-patch2-all` (CL-258042)
 - **Requires:** a Dawnwalker-compatible [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) 3.x install, already working
 - **Type:** Lua mod. No pak, no asset replacement, no Blueprint hooks, no shared library.
@@ -137,7 +137,7 @@ Each of these was examined and deliberately left alone:
 | System | Why it is untouched |
 |---|---|
 | Hold-to-interact (doors, chests, loot) | Not a QTE, and the underlying getters fire for anything merely focused and in range — automating it would trigger interactables you walk past. |
-| Drink Blood | Hold duration decides unconscious vs. drained, which sets a persistent fact tag and is read by quest conditions — the hold *is* the choice. Automation was built and removed in 1.0.3: `bButtonPressed` is never read, driving `TickDrinking` advances the stages but the game sees no input (no drain meter), and `InputDrinkBlood` is edge-triggered, so a second press aborts the feed. Your call, not the mod's. |
+| Drink Blood | Hold duration decides unconscious vs. drained, which sets a persistent fact tag and is read by quest conditions — the hold *is* the choice. Automation was built and removed in 1.0.4: `bButtonPressed` is never read, driving `TickDrinking` advances the stages but the game sees no input (no drain meter), and `InputDrinkBlood` is edge-triggered, so a second press aborts the feed. Your call, not the mod's. |
 | Parry | Ordinary combat timing. No prompt exists. |
 | Finishers | No input window at all — success is rolled before the animation. Nothing to skip. |
 | Inspections | Structurally similar to DIS, but self-paced with no timer and no fail state, and each hotspot plays narrative VO. Automating it would skip content. |
@@ -298,7 +298,7 @@ hook and some do not, the build has changed and the mod needs re-verifying
 against it. Any single failure unregisters the hooks that did succeed and
 disables the mod entirely — it never runs on a partial hook set.
 
-**`AutoQTE v1.0.3 loaded (0 blocklist patterns)` but nothing happens in a scene**
+**`AutoQTE v1.0.4 loaded (0 blocklist patterns)` but nothing happens in a scene**
 Either the scene is blocklisted — look for a `BLOCKED` line — or it never
 started under a class the mod recognises. If you see `scene started` but never
 `skipped:`, the prompt is not registering as pending: press the diagnose

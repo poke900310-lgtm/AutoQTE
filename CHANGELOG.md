@@ -1,3 +1,7 @@
+## 1.0.5
+
+Minor documentation adjustments. No behaviour changes.
+
 ## 1.0.4
 
 Minor documentation adjustments. No behaviour changes.

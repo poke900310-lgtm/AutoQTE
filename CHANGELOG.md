@@ -1,5 +1,9 @@
 ## 1.0.4
 
+Minor documentation adjustments. No behaviour changes.
+
+## 1.0.4
+
 Minor documentation adjustments. No code changes: `Scripts/main.lua` is
 identical to 1.0.3 apart from the version string.
 

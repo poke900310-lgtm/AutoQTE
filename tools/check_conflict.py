@@ -97,16 +97,21 @@ def check(target):
         for token in SEQUENCE:
             if token in text and not doc_only:
                 seq.add(token)
-        for m in re.finditer(r"Key\.([A-Z_0-9]+)", text):
-            if m.group(1) in OURKEYS:
-                keys.add(m.group(1))
-        # ini-style, e.g. toggleKey = F4 - the idiom this ecosystem ships
-        for m in re.finditer(r"(?im)^[^;#]*[a-z]*key\s*=\s*(F[0-9]{1,2})(?![0-9])", text):
-            if m.group(1) in OURKEYS:
-                keys.add(m.group(1))
-        for m in re.finditer(r'["\'](F[0-9]{1,2})["\']', text):
-            if m.group(1) in OURKEYS:
-                keys.add(m.group(1))
+        # A README that merely mentions F4 binds nothing. Gate the key scan on
+        # doc_only too, or any mod whose documentation quotes AutoQTE's own
+        # keys raises a note against itself.
+        if not doc_only:
+            for m in re.finditer(r"Key\.([A-Z_0-9]+)", text):
+                if m.group(1) in OURKEYS:
+                    keys.add(m.group(1))
+            # ini-style, e.g. toggleKey = F4 - the idiom this ecosystem ships.
+            # Anchored to a real key line, not prose that happens to contain one.
+            for m in re.finditer(r"(?im)^\s*[A-Za-z_]*key\s*=\s*(F[0-9]{1,2})(?![0-9])", text):
+                if m.group(1) in OURKEYS:
+                    keys.add(m.group(1))
+            for m in re.finditer(r'["\'](F[0-9]{1,2})["\']', text):
+                if m.group(1) in OURKEYS:
+                    keys.add(m.group(1))
 
     print("  ships: " + ", ".join("%s x%d" % (k, v) for k, v in sorted(kinds.items())))
 

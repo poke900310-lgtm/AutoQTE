@@ -1,5 +1,5 @@
 ================================================================================
-AutoQTE v1.0.5  -  The Blood of Dawnwalker
+AutoQTE v1.0.4  -  The Blood of Dawnwalker
 An UNOFFICIAL fan-made mod. Not affiliated with or endorsed by Rebel Wolves.
 Auto-resolves quick-time prompts in Dialogue Interaction Scenes.
 ================================================================================
@@ -293,7 +293,7 @@ prefixed [Lua] [AutoQTE].
   If ue4ss\UE4SS.log does not exist at all
         UE4SS is not installed or is not loading. Nothing below applies.
 
-  "AutoQTE v1.0.5 loaded (0 blocklist patterns)"
+  "AutoQTE v1.0.4 loaded (0 blocklist patterns)"
         The mod loaded. If this line is missing, it did not.
 
   "hooked ..."  x4

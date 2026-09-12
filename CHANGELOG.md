@@ -1,20 +1,19 @@
-## 1.0.5
-
-Minor documentation adjustments. No behaviour changes.
-
-## 1.0.4
-
-Minor documentation adjustments. No behaviour changes.
-
 ## 1.0.4
 
 Minor documentation adjustments. No code changes: `Scripts/main.lua` is
 identical to 1.0.3 apart from the version string.
 
-- The shipped `README.txt` lists Steam build 25232147 among the verified builds;
-  the 1.0.3 archive named only the two builds that preceded the 12 September
+- The shipped `README.txt` lists Steam build `25232147` among the verified
+  builds; the 1.0.3 archive named only the two that preceded the 12 September
   patch.
-- `README.md` links the Nexus page.
+- Mod-manager instructions are gone from the repo and from the shipped
+  `README.txt`. They live on the Nexus page, which is where mod-manager users
+  arrive from; a reader of the archive has already obtained it some other way.
+- `README.md` links the Nexus page, points at the Releases page for downloads,
+  and shows the `git clone` route for working on the mod.
+- `tools/check_conflict.py` gates its keybind scan on documentation files, so a
+  mod whose README merely quotes AutoQTE's own keys no longer raises a note
+  against itself. A real `ToggleKey = F4` line in an ini is still caught.
 
 ## 1.0.3
 

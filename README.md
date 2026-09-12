@@ -11,6 +11,7 @@ ends in the Completed state and every quest node downstream sees exactly what
 it expects. An optional blocklist lets you keep any scenes you would rather
 perform yourself.
 
+- **Nexus:** <https://www.nexusmods.com/thebloodofdawnwalker/mods/456>
 - **Version:** 1.0.3
 - **Game:** The Blood of Dawnwalker, UE 5.5.4 — verified on Steam build `25232147` (12 September 2026 patch), and before it on `dw1-pc-256181-shipping-patch2-all` (CL-256181) and `dw1-pc-258042-shipping-patch2-all` (CL-258042)
 - **Requires:** a Dawnwalker-compatible [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) 3.x install, already working

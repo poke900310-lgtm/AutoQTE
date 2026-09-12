@@ -1,5 +1,5 @@
 ================================================================================
-AutoQTE v1.0.4  -  The Blood of Dawnwalker
+AutoQTE v1.0.5  -  The Blood of Dawnwalker
 An UNOFFICIAL fan-made mod. Not affiliated with or endorsed by Rebel Wolves.
 Auto-resolves quick-time prompts in Dialogue Interaction Scenes.
 ================================================================================
@@ -77,35 +77,30 @@ minimal hook set, and it tolerates either DLL variant.
 INSTALL
 --------------------------------------------------------------------------------
 
-VORTEX
-    Install the archive and choose the "UE4SS (Lua mods)" mod type, then enable
-    and deploy. Vortex strips the Data folder and deploys into the right place.
+Copy the folder   Data\AutoQTE   from this archive into:
 
-MANUAL
-    Copy the folder   Data\AutoQTE   from this archive into:
+    <Game>\Dawnwalker\Binaries\Win64\ue4ss\Mods\
 
-        <Game>\Dawnwalker\Binaries\Win64\ue4ss\Mods\
+On Xbox / Game Pass that folder is Binaries\WinGDK, not Binaries\Win64.
 
-    On Xbox / Game Pass that folder is Binaries\WinGDK, not Binaries\Win64.
+So that you end up with:
 
-    so that you end up with:
+    ...\ue4ss\Mods\AutoQTE\enabled.txt
+    ...\ue4ss\Mods\AutoQTE\Scripts\main.lua
+    ...\ue4ss\Mods\AutoQTE\Scripts\AutoQTE.defaults.ini
 
-        ...\ue4ss\Mods\AutoQTE\enabled.txt
-        ...\ue4ss\Mods\AutoQTE\Scripts\main.lua
-        ...\ue4ss\Mods\AutoQTE\Scripts\AutoQTE.defaults.ini
+Copy AutoQTE.defaults.ini to AutoQTE.ini beside it if you want to change
+a setting. The mod runs fine without it.
 
-    Copy AutoQTE.defaults.ini to AutoQTE.ini beside it if you want to change
-    a setting. The mod runs fine without it.
-
-    That is the whole mod. Do not copy README.txt or LICENSE.txt into the game
-    folder - they are documentation only.
+That is the whole mod. Do not copy README.txt or LICENSE.txt into the game
+folder - they are documentation only.
 
 You do NOT need to edit mods.txt. The enabled.txt file is enough on its own, and
 shipping a mods.txt would overwrite your load order.
 
 
 UNINSTALL
-    Remove it in Vortex and deploy, or delete the Mods\AutoQTE folder. That
+    Delete the Mods\AutoQTE folder. That
     removes the mod, its settings and its log entirely. Nothing else is
     left behind - AutoQTE writes no file outside its own folder.
 
@@ -298,7 +293,7 @@ prefixed [Lua] [AutoQTE].
   If ue4ss\UE4SS.log does not exist at all
         UE4SS is not installed or is not loading. Nothing below applies.
 
-  "AutoQTE v1.0.4 loaded (0 blocklist patterns)"
+  "AutoQTE v1.0.5 loaded (0 blocklist patterns)"
         The mod loaded. If this line is missing, it did not.
 
   "hooked ..."  x4

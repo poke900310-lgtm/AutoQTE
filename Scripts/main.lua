@@ -3,7 +3,7 @@
 -- F4 toggle | F5 diagnose   (F10 is the game console, bound by ConsoleEnablerMod)
 -- Console commands do not work in this title (ProcessConsoleExec unavailable).
 
-local VERSION = "1.0.4"
+local VERSION = "1.0.5"
 
 local Config = {
     Enabled = true,

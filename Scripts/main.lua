@@ -3,7 +3,7 @@
 -- F4 toggle | F5 diagnose   (F10 is the game console, bound by ConsoleEnablerMod)
 -- Console commands do not work in this title (ProcessConsoleExec unavailable).
 
-local VERSION = "1.0.2"
+local VERSION = "1.0.3"
 
 local Config = {
     Enabled = true,
@@ -36,8 +36,20 @@ local Config = {
     --   ButtonHold  hold-to-interact on doors/chests/loot. Not a QTE, and the
     --               getters fire for anything merely focused and in range, so
     --               forcing them auto-triggers interactables you walk past.
-    --   DrinkBlood  hold duration picks unconscious vs drained; that feeds
-    --               bCountToInnocentKills and a persistent fact tag.
+    --   DrinkBlood  (Voracious Bite) hold duration picks unconscious vs drained,
+    --               which sets DrinkBloodSettings.KilledInnocentFactTag, reaches
+    --               DrinkBloodSubsystem:OnInnocentKill, changes post-feed
+    --               dialogue and is read by QuestConditionDrinkBloodType: the
+    --               hold IS the story choice, not a skill check in front of one.
+    --               Automated and removed again without ever shipping, having
+    --               measured why it cannot work: bButtonPressed is never read;
+    --               driving TickDrinking advances the stage machine but the
+    --               game sees no input at all, so no drain meter; and
+    --               InputDrinkBlood is edge-triggered - one (true), one (false)
+    --               per real hold - so the player's press has already landed by
+    --               StartBloodDrinking and ours is a duplicate that aborts the
+    --               feed. Suppressing the player's release is the only lever
+    --               left, and a UE4SS post-hook cannot cancel a call.
     --   Parry       ordinary combat timing, no prompt.
     --   Finisher    no input window exists at all -- the success chance is
     --               rolled before the animation, so there is nothing to skip.

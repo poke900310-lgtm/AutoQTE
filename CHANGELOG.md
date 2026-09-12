@@ -1,3 +1,18 @@
+## 1.0.3
+
+Documentation and release tooling on top of 1.0.2. No behaviour changes: the
+mod's code is identical apart from the version string and one comment.
+
+Added
+- `NEXUS.md`, the mod-page description, and `media/` for the page image.
+- A note in `main.lua` recording why blood drinking is not automated. The hold
+  duration is the story choice - it sets `KilledInnocentFactTag`, reaches
+  `DrinkBloodSubsystem:OnInnocentKill` and is read by quest conditions - and
+  three separate levers were measured and rejected: `bButtonPressed` is never
+  read, driving `TickDrinking` advances the stage machine while the game sees no
+  input, and `InputDrinkBlood` is edge-triggered, so a second press aborts the
+  feed. It is written down so nobody retries it blind.
+
 ## 1.0.2
 
 Fixed

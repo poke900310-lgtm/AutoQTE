@@ -13,6 +13,9 @@ AutoQTE.log
 /tools/lua/
 /tools/bin/
 
+# Nexus API key, if you keep it in the repo rather than the environment
+.nexus-key
+
 # Editor / OS
 __pycache__/
 *.py[cod]

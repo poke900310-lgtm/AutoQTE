@@ -43,3 +43,6 @@ aes.txt
 
 # Third-party proposed patches kept for review; never release content
 /patch/
+
+# Generated from NEXUS.md by tools/nexus_bbcode.py; paste into the Nexus page
+nexus-description.bbcode.txt

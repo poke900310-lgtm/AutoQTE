@@ -7,7 +7,7 @@ AutoQTE touches a handful of things, so only these questions matter:
 
   1. Does it hook the same UFunctions?          -> mutually exclusive
   2. Does it write the DIS prompt widget?       -> shared widget, needs a note
-  3. Does it bind F4 or F5?                     -> load-order dependent
+  3. Does it bind F4 or INS?                    -> load-order dependent
   4. Does it ship a shared UE4SS file?          -> prerequisite conflict
 
 Anything else - textures, meshes, paks, gameplay tuning, other Lua mods that
@@ -30,6 +30,10 @@ HOOKS = ("InteractiveSceneObject", "DISLevelSequenceDirector",
          "CompleteCurrentPrompt")
 # BP_DIS as its own token: not the W of WBP_DIS_Prompt_New_C
 HOOK_RE = re.compile(r"(?<![A-Za-z])BP_DIS(?![A-Za-z])")
+# The widget name is the specific signal. SetRenderOpacity stays because a HUD
+# mod fading widgets still contends with ours; SetVisibility is deliberately
+# NOT a token - nearly every UMG mod calls it, and AutoQTE's own hide is a
+# Visibility write that restores itself.
 WIDGET = ("WBP_DIS_Prompt_New", "SetRenderOpacity")
 SHARED = ("mods.txt", "ue4ss-settings.ini", "dwmapi.dll", "ue4ss.dll")
 # A DIS scene is played by a LevelSequencePlayer, so anything that watches every
@@ -39,7 +43,7 @@ SEQUENCE = ("LevelSequencePlayer", "MovieSceneSequencePlayer", "SetPlayRate",
 # Second injector: a proxy DLL sitting beside the game exe, next to UE4SS's own.
 PROXY = ("version.dll", "winmm.dll", "dinput8.dll", "dsound.dll", "d3d11.dll",
          "d3d12.dll", "xinput1_3.dll", "xinput1_4.dll", "bink2w64.dll")
-OURKEYS = ("F4", "F5")
+OURKEYS = ("F4", "INS")
 TEXT_EXT = (".lua", ".ini", ".txt", ".md", ".json", ".cfg")
 
 
@@ -106,10 +110,10 @@ def check(target):
                     keys.add(m.group(1))
             # ini-style, e.g. toggleKey = F4 - the idiom this ecosystem ships.
             # Anchored to a real key line, not prose that happens to contain one.
-            for m in re.finditer(r"(?im)^\s*[A-Za-z_]*key\s*=\s*(F[0-9]{1,2})(?![0-9])", text):
+            for m in re.finditer(r"(?im)^\s*[A-Za-z_]*key\s*=\s*(F[0-9]{1,2}|INS|HOME|END|DEL|PAGE_UP|PAGE_DOWN)(?![0-9A-Z_])", text):
                 if m.group(1) in OURKEYS:
                     keys.add(m.group(1))
-            for m in re.finditer(r'["\'](F[0-9]{1,2})["\']', text):
+            for m in re.finditer(r'["\'](F[0-9]{1,2}|INS|HOME|END|DEL|PAGE_UP|PAGE_DOWN)["\']', text):
                 if m.group(1) in OURKEYS:
                     keys.add(m.group(1))
 
@@ -129,7 +133,7 @@ def check(target):
         print("  [!] WRITES HUD WIDGET PROPERTIES: " + ", ".join(sorted(widget)))
         print("      May contend for the DIS prompt widget. AutoQTE will not")
         print("      overwrite another mod's value; if the prompt is ever left")
-        print("      faded, set HidePrompt = false in AutoQTE.ini.")
+        print("      faded or hidden, set HidePrompt = false in AutoQTE.ini.")
         if verdict == "COMPATIBLE":
             verdict = "NOTE"
     if sharedlib:

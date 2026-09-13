@@ -8,10 +8,15 @@ behaviour it covers and the suite must go red. A SURVIVED line means the suite
 cannot see that bug, which is the failure mode this project keeps hitting --
 a green suite that proves nothing.
 
-Known survivor: getScalar's type filter has no independently observable effect,
-because every consumer guards the value again (`== true`, `type(was) ==
-"number"`). It is defence-in-depth, not dead code, and is deliberately absent
-from the table below.
+Also deliberately untested: the pcall around applyIni itself. Every fault it
+could catch is already caught closer to its source (iniBody pcalls the open, the
+read and the close), so there is no input that reaches it -- it is a backstop,
+not a code path, and no mutant targets it.
+
+getScalar's type filter used to be an unobservable defence-in-depth (every
+consumer re-guarded the value). Since 1.0.8 setVisibility's read-back consumes
+it directly; and the diagnose key prints only members the actor really has.
+It is observable and in the table (killed by V16's diagnose assertion).
 """
 import os
 import subprocess
@@ -23,6 +28,19 @@ SUITE = os.path.join(ROOT, "tests", "autoqte_regression.lua")
 OUT = os.path.join(ROOT, "tests", "mut")
 
 MUTANTS = [
+    ("completion_return_taken_as_success",
+     'if promptPending(actor) then',
+     'if false then'),
+    ("unknown_class_leaves_scene_tracked",
+     'if not sameActor(scene, actor) then endScene("superseded") end'
+     + chr(10) + '    local cls = classOf(actor)',
+     'local cls = classOf(actor)'),
+    ("hide_forgets_an_owed_restore",
+     'if not restored and not (hiddenWidget and ad == hiddenAddr and nm == hiddenName) then',
+     'if false then'),
+    ("unreadable_ini_reported_as_absent",
+     'log("%s opened but could not be read: %s", name, tostring(body))',
+     'local _ = body'),
     ("blockalso_reads_the_unquoted_value",
      'for pat in raw:gmatch("[^,]+") do', 'for pat in v:gmatch("[^,]+") do'),
     ("comment_strip_truncates_a_bare_hash",
@@ -36,7 +54,7 @@ MUTANTS = [
      'local ok, v = pcall(function() return obj:IsValid() end)\n    return ok and v',
      'local ok, v = pcall(function() return obj:IsValid() end)\n    return true'),
     ("restore_is_a_noop",
-     'restored = setOpacity(hiddenWidget, hiddenOpacity or 1.0)', 'restored = true'),
+     'restored = setVisibility(hiddenWidget, hiddenVis or VIS_VISIBLE)', 'restored = true'),
     ("restore_addr_check_gone",
      'and addressOf(hiddenWidget) == hiddenAddr and fullName(hiddenWidget) == hiddenName',
      'and fullName(hiddenWidget) == hiddenName'),
@@ -44,11 +62,11 @@ MUTANTS = [
      'if hiddenWidget and isAlive(hiddenWidget)\n       and addressOf',
      'if hiddenWidget and (true)\n       and addressOf'),
     ("latch_guard_gone",
-     'if not restored and was == 0.0 then was = prev end',
+     'if not restored and was == VIS_COLLAPSED then was = prev end',
      'if false then was = prev end'),
     ("restore_latch_dropped_on_refusal",
-     '    if restored then\n        hiddenWidget, hiddenName, hiddenAddr, hiddenOpacity = nil, nil, nil, nil\n    end',
-     '    hiddenWidget, hiddenName, hiddenAddr, hiddenOpacity = nil, nil, nil, nil'),
+     '    if restored then\n        hiddenWidget, hiddenName, hiddenAddr, hiddenVis = nil, nil, nil, nil\n    end',
+     '    hiddenWidget, hiddenName, hiddenAddr, hiddenVis = nil, nil, nil, nil'),
     ("ini_line_dropped_silently",
      'elseif line:match("%S") then',
      'elseif false then'),
@@ -70,11 +88,9 @@ MUTANTS = [
     ("complete_result_ignored",
      'if not (call(actor, "CompleteCurrentPrompt")) then',
      'if false then call(actor, "CompleteCurrentPrompt") ; end if false then'),
-    ("clobbers_other_mods",
-     '       and getScalar(hiddenWidget, "RenderOpacity") == 0.0 then',
-     '       and true then'),
     ("ini_never_read",
-     'pcall(applyIni)', 'local _ = applyIni'),
+     'local ok, err = pcall(applyIni)',
+     'local ok, err = true, nil'),
     ("ini_blockalso_ignored",
      'Config.BlockedScenes[#Config.BlockedScenes + 1] = pat', 'local _ = pat'),
     ("ini_bools_broken",
@@ -83,6 +99,38 @@ MUTANTS = [
     ("toggle_gates_watching",
      '    if not Config.DIS.Enabled then return end',
      '    if not Config.Enabled or not Config.DIS.Enabled then return end'),
+    # 1.0.8 hardening - each mutant reverts one item; V17-V20 must go red
+    ("visibility_readback_gone",
+     "    return type(back) ~= \"number\" or back == value",
+     "    return true"),
+    ("unreadable_readback_distrusted",
+     "    return type(back) ~= \"number\" or back == value",
+     "    return back == value"),
+    ("clobbers_other_mods",
+     "        if type(cur) ~= \"number\" or cur == VIS_COLLAPSED then",
+     "        if true then"),
+    ("f4_hook_guard_gone",
+     "        if not Config.DIS.Enabled then" + chr(10) + "            log(" + chr(34) + "AutoQTE cannot be enabled - the DIS hooks are unavailable" + chr(34) + ")" + chr(10) + "            return" + chr(10) + "        end" + chr(10),
+     ""),
+    ("hook_callback_unguarded",
+     "        local okc, err = xpcall(cb, debug.traceback, ...)",
+     "        local okc, err = true, cb(...)"),
+    ("start_context_release_gone",
+     "        elseif scene then",
+     "        elseif false then"),
+    # review fixes after 1.0.8 hardening
+    ('getscalar_filter_gone',
+     '    if t == "boolean" or t == "number" or t == "string" then return v end\n    return nil',
+     '    return v'),
+    ('restore_name_check_gone',
+     '       and addressOf(hiddenWidget) == hiddenAddr and fullName(hiddenWidget) == hiddenName then',
+     '       and addressOf(hiddenWidget) == hiddenAddr then'),
+    ('trailing_separator_strip_gone',
+     'v = v:gsub("%s+[;#].*$", ""):gsub("[;#]+$", "")',
+     'v = v:gsub("%s+[;#].*$", "")'),
+    ('log_write_unguarded',
+     '        if logFile and not pcall(function() logFile:write(msg .. "\\n"); logFile:flush() end) then\n            logFile = false          -- a handle that cannot be written is never retried\n        end',
+     '        if logFile then logFile:write(msg .. "\\n"); logFile:flush() end'),
 ]
 
 

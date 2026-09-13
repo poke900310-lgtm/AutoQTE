@@ -308,8 +308,8 @@ GAME VERSION
 Verified on:  Steam build 25232147, the 12 September 2026 patch (UE 5.5.4).
 Earlier builds of the same patch line also worked.
 
-The mod identifies everything by name, not by memory address, so it is not tied
-to a storefront and should carry across builds. If a game update renames the
+The mod resolves everything by name, with no hardcoded addresses or offsets, so
+it is not tied to a storefront and should carry across builds. If a game update renames the
 classes or properties it reads, it fails closed: prompts revert to being played
 by hand and nothing is auto-resolved.
 

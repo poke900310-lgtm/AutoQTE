@@ -144,8 +144,9 @@ read back, and a read-back that is unreadable or not a number is treated as no
 evidence rather than as a failure.
 
 Every engine call is wrapped in `pcall`, because UE4SS returns truthy phantom
-userdata for members that do not exist; only scalar reads are trusted, and
-object identity is a `GetAddress()` plus full-name comparison, never Lua `==`.
+userdata for members that do not exist; only scalar reads are trusted. Live
+objects are compared by `GetAddress()` — the prompt widget additionally by its
+full name — never by Lua `==`.
 If `CompleteCurrentPrompt` is refused or returns without clearing the prompt,
 the widget is restored and the scene is handed back to the player.
 

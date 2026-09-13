@@ -1,113 +1,42 @@
--- AutoQTE - The Blood of Dawnwalker
--- Auto-resolves DIS (Dialogue Interaction Scene) prompts.
--- F4 toggle | INS diagnose   (F10 is the game console, bound by ConsoleEnablerMod)
--- Console commands do not work in this title (ProcessConsoleExec unavailable).
-
 local VERSION = "1.0.8"
-
 local Config = {
     Enabled = true,
-
     DIS = {
         Enabled = true,
         HidePrompt = true,
     },
-
-    -- Scenes to leave to the player. EMPTY BY DEFAULT.
-    --
-    -- Auto-completing a prompt is not a story decision. AutoQTE only ever calls
-    -- CompleteCurrentPrompt, which fires OnPromptSuccess and sets the scene's end
-    -- type to Completed (BP_DIS_C ubergraph 15292) - byte-identical to what the
-    -- game records when you press the button yourself. It cannot produce any
-    -- other end state.
-    --
-    -- Quest logic DOES distinguish outcomes: QuestNodeInteractiveScene_Controller
-    -- declares OnCompletedInteractiveScene and OnCancelledInteractiveScene, and
-    -- InteractiveSceneObject carries a delegate for each. AutoQTE can only ever
-    -- reach the Completed side - the same side successful manual play reaches.
-    -- EInteractiveSceneEndType's third value, CancelledByPlayer, is never written
-    -- by BP_DIS_C at all: only Completed (2) and CancelledByQuestNode (1).
-    --
-    -- So this list is a matter of TASTE. Use it if you would rather perform a
-    -- scene yourself. AutoQTE.defaults.ini carries a ready-made cautious set.
     BlockedScenes = {},
-
-    -- Evaluated and deliberately NOT implemented, each for a validated reason:
-    --   ButtonHold  hold-to-interact on doors/chests/loot. Not a QTE, and the
-    --               getters fire for anything merely focused and in range, so
-    --               forcing them auto-triggers interactables you walk past.
-    --   DrinkBlood  (Voracious Bite) hold duration picks unconscious vs drained,
-    --               which sets DrinkBloodSettings.KilledInnocentFactTag, reaches
-    --               DrinkBloodSubsystem:OnInnocentKill, changes post-feed
-    --               dialogue and is read by QuestConditionDrinkBloodType: the
-    --               hold IS the story choice, not a skill check in front of one.
-    --               Automated and removed again without ever shipping, having
-    --               measured why it cannot work: bButtonPressed is never read;
-    --               driving TickDrinking advances the stage machine but the
-    --               game sees no input at all, so no drain meter; and
-    --               InputDrinkBlood is edge-triggered - one (true), one (false)
-    --               per real hold - so the player's press has already landed by
-    --               StartBloodDrinking and ours is a duplicate that aborts the
-    --               feed. Suppressing the player's release is the only lever
-    --               left, and a UE4SS post-hook cannot cancel a call.
-    --   Parry       ordinary combat timing, no prompt.
-    --   Finisher    no input window exists at all -- the success chance is
-    --               rolled before the animation, so there is nothing to skip.
-    --   Inspection  AInspectableBase, a structural twin of DIS, but self-paced
-    --               with no timer and no fail state, and each hotspot fires
-    --               narrative VO.
-
-    -- Known claimed by mods on this game: F1/F2/F3, F6, F7, F8, F9, F10. The
-    -- game itself binds no F-key in its mapping assets, but its user-mappable
-    -- quicksave sits on F5 by default, and a UE4SS key fires alongside a game
-    -- binding rather than instead of it - so diagnose lives on INS, which
-    -- nothing on this game uses. Both are names rather than constants.
-    -- "" disables.
     Keys = { Toggle = "F4", Diagnose = "INS" },
-
     Verbose = false,
-    -- Per-prompt tracing (trigger state + each completion). Off for normal
-    -- play; set true to diagnose a scene that misbehaves.
     LogEveryCompletion = false,
 }
-
 local ISO         = "/Script/DogwoodWorld.InteractiveSceneObject"
 local HOOK_START  = ISO .. ":OnInteractiveScenePlaybackStarted"
 local HOOK_DONE   = ISO .. ":OnCompletedInteractiveSceneNotification"
 local HOOK_CANCEL = ISO .. ":OnCancelledInteractiveSceneNotification"
 local HOOK_PROMPT = "/Script/DogwoodWorld.DISLevelSequenceDirector:TriggerDISInteraction"
-
 local DIS_CLASS   = "BP_DIS_C"
 local P_WIDGET    = "Action Prompt"
--- ESlateVisibility, in declaration order. The .pak edition hides the prompt by
--- shipping WBP_DIS_Prompt_New with this same property defaulted to Collapsed;
--- both editions therefore act on the same property, one per widget at runtime,
--- the other once in the asset.
 local W_VISIBILITY = "Visibility"
 local VIS_VISIBLE   = 0
 local VIS_COLLAPSED = 1
 local P_PAUSED    = "IsPaused"
 local W_ACTIVE    = "IsPromptActive"
-
--- Beside this script, wherever installed. Never a hardcoded path.
 local LOG = (debug.getinfo(1, "S").source:match("^@(.*[/\\])") or "") .. "AutoQTE.log"
-
 local logFile, lastMsg, reps = nil, nil, 0
-
 local function emit(msg)
     print("[AutoQTE] " .. msg .. "\n")
     if Config.Verbose and logFile ~= false then
         if not logFile then
             local okf, f = pcall(io.open, LOG, "a")
-            logFile = (okf and f) or false      -- false = tried and failed, never retry
+            logFile = (okf and f) or false
             if not logFile then print("[AutoQTE] could not open " .. LOG .. "\n") end
         end
         if logFile and not pcall(function() logFile:write(msg .. "\n"); logFile:flush() end) then
-            logFile = false          -- a handle that cannot be written is never retried
+            logFile = false
         end
     end
 end
-
 local function log(fmt, ...)
     local ok, msg = pcall(string.format, fmt, ...)
     if not ok then msg = tostring(fmt) end
@@ -116,13 +45,7 @@ local function log(fmt, ...)
     if reps > 0 then emit(string.format("(previous line x%d)", reps + 1)); reps = 0 end
     emit(msg)
 end
-
--- Settings live in AutoQTE.ini beside this script, so a mod update cannot
--- overwrite them. AutoQTE.defaults.ini ships as the reference copy and IS
--- replaced on update. Anything absent or unreadable keeps the value above.
--- BlockAlso in the ini is how the blocklist is normally populated at all.
 local INI_FILES = { "AutoQTE.ini", "AutoQTE.defaults.ini" }
-
 local function iniBody()
     local dir = LOG:sub(1, #LOG - #("AutoQTE.log"))
     for _, name in ipairs(INI_FILES) do
@@ -130,9 +53,6 @@ local function iniBody()
         if okf and f then
             local ok, body = pcall(function() return f:read("a") end)
             pcall(function() f:close() end)
-            -- A file that opens but will not read is worth a line: silently
-            -- falling through to the defaults looks identical to having no ini,
-            -- and the user's settings are then quietly not in effect.
             if not ok then
                 log("%s opened but could not be read: %s", name, tostring(body))
             end
@@ -140,36 +60,30 @@ local function iniBody()
         end
     end
 end
-
 local function toBool(v)
     v = v:lower()
     if v == "true"  or v == "1" or v == "yes" or v == "on"  then return true  end
     if v == "false" or v == "0" or v == "no"  or v == "off" then return false end
     return nil
 end
-
 local function applyIni()
     local body, name = iniBody()
     if not body then
         log("no AutoQTE.ini or AutoQTE.defaults.ini beside main.lua - using built-in defaults")
         return
     end
-    body = body:gsub("^\239\187\191", "")            -- a UTF-8 BOM would eat the first setting
+    body = body:gsub("^\239\187\191", "")
     local set, bad = 0, 0
     for line in body:gmatch("[^\r\n]+") do
-        -- Collapse whitespace runs first: the trims below are O(n^2) on a long one.
         line = line:gsub("[ \t]+", " ")
         if not line:match("^%s*[;#%[]") then
-            -- Accept a dotted key: v1.0.0 documented DIS.HidePrompt.
             local k, v = line:match("^%s*([%w_.]+)%s*=%s*(.-)%s*$")
             if k then
-                -- Inline comment only after whitespace: a bare ; or # is part of
-                -- the value, so BlockAlso = alpha#beta cannot truncate to alpha.
                 v = v:gsub("%s+[;#].*$", ""):gsub("[;#]+$", "")
-                local raw = v                                      -- BlockAlso unquotes per item
-                v = v:match('^"(.*)"$') or v:match("^'(.*)'$") or v  -- README showed quotes
-                local key = k:lower():gsub("^dis%.", "")   -- one name: gsub's count is dropped
-                local b = toBool(v)                        -- "" yields nil, same as no value
+                local raw = v
+                v = v:match('^"(.*)"$') or v:match("^'(.*)'$") or v
+                local key = k:lower():gsub("^dis%.", "")
+                local b = toBool(v)
                 if     key == "enabled"            and b ~= nil then Config.Enabled = b;              set = set + 1
                 elseif key == "hideprompt"         and b ~= nil then Config.DIS.HidePrompt = b;       set = set + 1
                 elseif key == "verbose"            and b ~= nil then Config.Verbose = b;              set = set + 1
@@ -179,7 +93,6 @@ local function applyIni()
                 elseif key == "blockalso"          then
                     for pat in raw:gmatch("[^,]+") do
                         pat = pat:match("^%s*(.-)%s*$")
-                        -- per item: a whole-value unquote turns '"a", "b"' into junk
                         pat = (pat:match('^"(.*)"$') or pat:match("^'(.*)'$") or pat):lower()
                         if pat ~= "" then
                             Config.BlockedScenes[#Config.BlockedScenes + 1] = pat
@@ -188,27 +101,22 @@ local function applyIni()
                     end
                 else bad = bad + 1 end
             elseif line:match("%S") then
-                bad = bad + 1                          -- never drop a line silently
+                bad = bad + 1
             end
         end
     end
     log("%s: %d setting(s) applied%s", name, set,
         bad > 0 and (", " .. bad .. " line(s) not understood") or "")
 end
-
-do  -- a parser fault must not vanish: settings may be half-applied
+do
     local ok, err = pcall(applyIni)
     if not ok then log("AutoQTE.ini could not be read: %s", tostring(err)) end
 end
-
 local function isAlive(obj)
     if not obj then return false end
     local ok, v = pcall(function() return obj:IsValid() end)
     return ok and v
 end
-
--- UE4SS returns a truthy userdata for members that do not exist, so a bare
--- read cannot tell "false" from "no such property". Only scalars are trusted.
 local function getScalar(obj, name)
     local ok, v = pcall(function() return obj[name] end)
     if not ok then return nil end
@@ -216,43 +124,35 @@ local function getScalar(obj, name)
     if t == "boolean" or t == "number" or t == "string" then return v end
     return nil
 end
-
 local function getObject(obj, name)
     local ok, v = pcall(function() return obj[name] end)
     if ok and isAlive(v) then return v end
     return nil
 end
-
 local function call(obj, name, ...)
     local args = { ... }
     local ok, res = pcall(function() return obj[name](obj, table.unpack(args)) end)
     return ok, res
 end
-
 local function fullName(obj)
     local ok, n = pcall(function() return obj:GetFullName() end)
     if ok and type(n) == "string" then return n end
     return ""
 end
-
--- Two Lua proxies for one UObject are never == equal; compare addresses.
 local function sameActor(a, b)
     local ok, eq = pcall(function() return a:GetAddress() == b:GetAddress() end)
     return ok and eq
 end
-
 local function addressOf(obj)
     local ok, a = pcall(function() return obj:GetAddress() end)
     if ok and type(a) == "number" then return a end
     return nil
 end
-
 local function classOf(obj)
     local ok, n = pcall(function() return obj:GetClass():GetFName():ToString() end)
     if ok and type(n) == "string" then return n end
     return ""
 end
-
 local scene          = nil
 local seenClass      = {}
 local announced      = false
@@ -261,9 +161,7 @@ local hiddenWidget   = nil
 local hiddenName     = nil
 local hiddenAddr     = nil
 local hiddenVis      = nil
-
 local endScene
-
 local function sceneIdentity(actor)
     local ok, seq = call(actor, "GetInteractiveSceneLevelSequence")
     if not (ok and isAlive(seq)) then return nil end
@@ -271,7 +169,6 @@ local function sceneIdentity(actor)
     if n == "" then return nil end
     return (fullName(actor) .. " " .. n):lower()
 end
-
 local function diagnose(actor)
     log(string.rep("-", 62))
     log("actor: %s", fullName(actor))
@@ -292,61 +189,38 @@ local function diagnose(actor)
     end
     log(string.rep("-", 62))
 end
-
 local function promptPending(actor)
     return getScalar(actor, P_PAUSED) == true
 end
-
--- A call that returns is not proof it applied. Read the value back: a silent
--- no-op on restore would forget a widget we still owe, and one on hide would
--- latch a widget we never changed. An UNREADABLE value is no evidence either
--- way, so the call is trusted then - distrusting it would leave a widget we
--- did change with nothing remembering it. Readable-but-not-a-number counts as
--- unreadable: a name where an index was expected is not a failed write.
 local function setVisibility(w, value)
     if not (w and isAlive(w)) then return false end
     if not (call(w, "SetVisibility", value)) then return false end
     local back = getScalar(w, W_VISIBILITY)
     return type(back) ~= "number" or back == value
 end
-
--- Undoes our own write and nothing else. If another HUD mod has touched the
--- widget since we hid it, its value stands -- we do not own that widget.
 local function restorePrompt()
     local restored, prev = true, hiddenVis
     if hiddenWidget and isAlive(hiddenWidget)
        and addressOf(hiddenWidget) == hiddenAddr and fullName(hiddenWidget) == hiddenName then
-        -- Still Collapsed means our write is still in effect; anything else is
-        -- another mod's value and stands. Unreadable is no evidence, and we know
-        -- we wrote Collapsed, so restore rather than strand it.
         local cur = getScalar(hiddenWidget, W_VISIBILITY)
         if type(cur) ~= "number" or cur == VIS_COLLAPSED then
             restored = setVisibility(hiddenWidget, hiddenVis or VIS_VISIBLE)
         end
     end
-    -- Only forget the widget if we actually un-hid it. Dropping it after a refusal
-    -- strands it Collapsed for the session and latches that as the "original".
     if restored then
         hiddenWidget, hiddenName, hiddenAddr, hiddenVis = nil, nil, nil, nil
     end
     return restored, prev
 end
-
 local function hidePrompt(actor)
     if not Config.DIS.HidePrompt then return end
     local w = getObject(actor, P_WIDGET)
     local restored, prev = restorePrompt()
     if not w then return end
-    -- Retaining the latch on a refusal buys nothing if the next hide overwrites
-    -- it: the first widget then sits Collapsed with nothing remembering it,
-    -- which is the session-long invisible prompt this retention exists to avoid.
-    -- So while a restore is still owed, only re-hide that same widget.
     local nm, ad = fullName(w), addressOf(w)
     if not restored and not (hiddenWidget and ad == hiddenAddr and nm == hiddenName) then
         return
     end
-    -- A refused restore leaves our own Collapsed on the widget; never latch that
-    -- as the original.
     local was = getScalar(w, W_VISIBILITY)
     if not restored and was == VIS_COLLAPSED then was = prev end
     if setVisibility(w, VIS_COLLAPSED) then
@@ -354,7 +228,6 @@ local function hidePrompt(actor)
         hiddenVis = type(was) == "number" and was or VIS_VISIBLE
     end
 end
-
 local function isBlocked(id)
     if not id then return "unidentified scene" end
     for _, pat in ipairs(Config.BlockedScenes) do
@@ -362,11 +235,9 @@ local function isBlocked(id)
     end
     return nil
 end
-
 local function resolvePrompt(actor)
     if not Config.Enabled or not isAlive(actor) then return end
     if not promptPending(actor) then return end
-
     local id = sceneId
     hidePrompt(actor)
     if not (call(actor, "CompleteCurrentPrompt")) then
@@ -374,9 +245,6 @@ local function resolvePrompt(actor)
         endScene("completion refused")
         return
     end
-    -- A call that returns without throwing is not proof it did anything. If the
-    -- prompt is still pending, hand it back rather than report a skip that did
-    -- not happen and leave the widget hidden over a live prompt.
     if promptPending(actor) then
         restorePrompt()
         log("CompleteCurrentPrompt returned but the prompt is still pending - left to the player: %s",
@@ -389,16 +257,10 @@ local function resolvePrompt(actor)
     end
     if Config.LogEveryCompletion then log("prompt completed") end
 end
-
 local function beginScene(actor, reason)
-    -- Track the scene even while the toggle is off, so F4 resumes mid-scene.
-    -- Config.Enabled gates the acting, in resolvePrompt; it does not gate the watching.
     if not Config.DIS.Enabled then return end
     if not isAlive(actor) then return end
     if fullName(actor):find("Default__", 1, true) then return end
-    -- Supersede BEFORE the class check. A scene we do not recognise still means
-    -- the one we track is no longer on screen; returning early here left it
-    -- tracked, and a later trigger completed a prompt in a finished scene.
     if not sameActor(scene, actor) then endScene("superseded") end
     local cls = classOf(actor)
     if cls ~= DIS_CLASS then
@@ -408,7 +270,6 @@ local function beginScene(actor, reason)
         end
         return
     end
-
     local id = sceneIdentity(actor)
     local blocked = isBlocked(id)
     if blocked then
@@ -416,15 +277,11 @@ local function beginScene(actor, reason)
         log("BLOCKED (%s) - left to the player: %s", blocked, id or fullName(actor))
         return
     end
-
-    -- announced is reset by endScene; resetting it here too would announce a
-    -- scene twice when the same actor reports a second playback start.
     scene = actor
     sceneId = id
     log("scene started (%s): %s", reason, id)
     resolvePrompt(actor)
 end
-
 endScene = function(reason)
     restorePrompt()
     if not scene then return end
@@ -433,21 +290,13 @@ endScene = function(reason)
     announced = false
     log("scene ended (%s) - dormant", reason)
 end
-
 local hooks = {}
-
 local function unhookAll()
     for _, h in ipairs(hooks) do pcall(UnregisterHook, h[1], h[2], h[3]) end
     hooks = {}
 end
-
 local function hook(path, cb, label)
     local noop = function() end
-    -- Contain an error inside a callback and report it with its traceback.
-    -- Deliberately NOT endScene and NOT a disable: everything that touches the
-    -- engine here is already pcall-wrapped, so what is left to throw is mostly
-    -- the logger, and dropping the scene for that turns a noisy mod into a
-    -- silent non-working one. The next trigger still finds the scene.
     local guarded = function(...)
         local okc, err = xpcall(cb, debug.traceback, ...)
         if okc then return end
@@ -466,28 +315,22 @@ local function hook(path, cb, label)
     end
     return false
 end
-
--- Some UE4SS distributions for this game ship a patched DLL that hands hook
--- callbacks the value directly instead of a parameter wrapper. Accept both.
 local function contextActor(Context)
     local ok, obj = pcall(function() return Context:get() end)
     if ok and isAlive(obj) then return obj end
     if isAlive(Context) then return Context end
     return nil
 end
-
 local MISSING
 for _, g in ipairs({ "RegisterHook", "UnregisterHook", "RegisterKeyBind",
                      "IsKeyBindRegistered", "ExecuteInGameThread",
                      "Key" }) do
     if rawget(_G, g) == nil then MISSING = g break end
 end
-
 if MISSING then
     Config.DIS.Enabled = false
     log("this UE4SS build has no %s - AutoQTE disabled", MISSING)
 end
-
 if Config.DIS.Enabled then
     local ok = true
     ok = hook(HOOK_START, function(Context)
@@ -495,22 +338,17 @@ if Config.DIS.Enabled then
         if a then
             beginScene(a, "playback started")
         elseif scene then
-            -- A scene began that we cannot see. Whatever we track is no longer
-            -- the one on screen; let it go rather than drive a prompt in it later.
             endScene("scene-start context unreadable")
         end
     end, "OnInteractiveScenePlaybackStarted") and ok
-
     ok = hook(HOOK_DONE, function(Context)
         local a = contextActor(Context)
         if sameActor(a, scene) then endScene("completed") end
     end, "OnCompletedInteractiveSceneNotification") and ok
-
     ok = hook(HOOK_CANCEL, function(Context)
         local a = contextActor(Context)
         if sameActor(a, scene) then endScene("cancelled") end
     end, "OnCancelledInteractiveSceneNotification") and ok
-
     ok = hook(HOOK_PROMPT, function()
         if not scene then log("trigger fired but no scene tracked"); return end
         if not isAlive(scene) or classOf(scene) ~= DIS_CLASS then endScene("actor invalid"); return end
@@ -523,19 +361,15 @@ if Config.DIS.Enabled then
         end
         resolvePrompt(scene)
     end, "TriggerDISInteraction") and ok
-
     if not ok then
         unhookAll()
         Config.DIS.Enabled = false
         log("a hook did not resolve - a game update likely changed the scene API; AutoQTE disabled")
     end
 end
-
-
 local function inGame(fn)
     if not pcall(ExecuteInGameThread, fn) then log("could not reach the game thread") end
 end
-
 local function bind(name, fn)
     if type(name) ~= "string" or name == "" then return end
     name = name:upper()
@@ -557,9 +391,7 @@ local function bind(name, fn)
         log("%s could not be bound on this UE4SS build", name)
     end
 end
-
 if not MISSING then
-
 bind(Config.Keys.Toggle, function()
     inGame(function()
         if not Config.DIS.Enabled then
@@ -571,15 +403,9 @@ bind(Config.Keys.Toggle, function()
         log("%s", Config.Enabled and ">>> AutoQTE ENABLED" or "<<< AutoQTE DISABLED")
     end)
 end)
-
--- The diagnose key also inspects UNTRACKED actors (blocked scenes, or a scene we never
--- adopted), so a blocklist hit can still be diagnosed. The sweep is expensive
--- but runs only on this keypress, never on a timer.
 bind(Config.Keys.Diagnose, function()
     inGame(function()
         if scene and isAlive(scene) then diagnose(scene); return end
-        -- Only the sweep needs FindAllOf, so a build without it loses the diagnose key's
-        -- untracked-actor scan rather than the whole mod.
         local finder = rawget(_G, "FindAllOf")
         local ok, actors = false, nil
         if finder then ok, actors = pcall(finder, DIS_CLASS)
@@ -599,8 +425,6 @@ bind(Config.Keys.Diagnose, function()
         if n == 0 then log("dormant - no scene tracked, no pending prompt found") end
     end)
 end)
-
 end
-
 log("")
 log("AutoQTE v%s loaded (%d blocklist patterns)", VERSION, #Config.BlockedScenes)

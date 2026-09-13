@@ -25,15 +25,18 @@ patch). All four hooks resolve and scenes auto-complete on that build.
 
 ## Installation instructions
 
-**Vortex** - install the archive. It uses the "UE4SS (Lua mods)" layout and lands
-in the right place on its own.
+**Vortex** - install the archive; it carries the full path from the game
+folder, so it deploys into place on its own.
 
-**Manual** - extract `Data\AutoQTE\` into your Mods folder:
+**Manual** - extract the archive into your game folder and merge
+`Dawnwalker`:
 
 ```
-Steam:      ...\The Blood of Dawnwalker\Dawnwalker\Binaries\Win64\ue4ss\Mods\
-Game Pass:  ...\The Blood of Dawnwalker\Dawnwalker\Binaries\WinGDK\ue4ss\Mods\
+...\The Blood of Dawnwalker\
 ```
+
+On Xbox / Game Pass the project folder is `Binaries\WinGDK`, not
+`Binaries\Win64`, so move the `AutoQTE` folder there afterwards.
 
 You should end up with `Mods\AutoQTE\enabled.txt` and
 `Mods\AutoQTE\Scripts\main.lua`. No `mods.txt` entry is needed - the mod loads

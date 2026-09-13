@@ -33,7 +33,7 @@ Choose it only if you cannot run UE4SS, and never install both.
 
 ## Installation instructions
 
-**Vortex** - install the archive; it carries the full path from the game
+**Mod manager** - install the archive; it carries the full path from the game
 folder, so it deploys into place on its own.
 
 **Manual** - extract the archive into your game folder and merge

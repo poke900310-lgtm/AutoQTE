@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-r"""Build the release archive in the layout Vortex's "UE4SS (Lua mods)" type expects.
+r"""Build the release archive in the layout a mod manager's "UE4SS (Lua mods)" type expects.
 
     python tools/build.py            -> dist/AutoQTE-<version>.zip
 
@@ -30,7 +30,7 @@ def version_of(path):
 # Full path from the game folder, so one archive serves both routes: extract it
 # into the game folder and it merges into place, and a mod manager deploying
 # relative to the game root lands the same files in the same spots. This is what
-# the other Dawnwalker Lua mods ship; the old Data/ prefix was a Vortex-only
+# the other Dawnwalker Lua mods ship; the old Data/ prefix was a mod-manager-only
 # convention that left manual installers digging a folder deeper than everyone
 # else's instructions told them to.
 MODPATH = "Dawnwalker/Binaries/Win64/ue4ss/Mods/AutoQTE/"
@@ -75,7 +75,7 @@ def main():
             sys.exit("%s still mentions version(s) %s; main.lua says %s"
                      % (rel, ", ".join(sorted(stale)), version))
 
-    # Vortex reads a mod's version from the archive filename, so put it there.
+    # A mod manager reads a mod's version from the archive filename, so put it there.
     global OUT
     OUT = os.path.join(ROOT, "dist", "AutoQTE-%s.zip" % version)
     os.makedirs(os.path.dirname(OUT), exist_ok=True)

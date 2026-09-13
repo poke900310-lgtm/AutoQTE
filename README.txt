@@ -160,9 +160,7 @@ Set in AutoQTE.ini (copy AutoQTE.defaults.ini beside main.lua):
 
 Any key name UE4SS knows, written without quotes; an empty value disables that
 bind. F4 and INS were chosen because
-nothing else in this game's mod ecosystem was found using them. Claimed by other
-mods for this game: F1, F2, F3 (DawnWALKING), F6 (UE4SS Cheat Menu, Vampire Form
-Toggle), F7/F8/F9/F10 (HUDTweaks - Fixes).
+nothing else in this game's mod ecosystem was found using them. Several other function keys are already claimed by other mods for this game.
 
 If another mod claims your key first, AutoQTE does NOT take it - it says so in
 the log and leaves that bind unregistered, so the other mod keeps working. Pick
@@ -257,12 +255,12 @@ game share. It has no load-order requirement.
 
 HUD mods that manage the DIS prompt widget:
 
-  Dawnwalker HUDTweaks - Fixes lists WBP_DIS_Prompt_New_C in its own fade
+  Another HUD mod may list WBP_DIS_Prompt_New_C in its own fade
   watch list and writes RenderOpacity to it - a different property from the
   Visibility AutoQTE uses, so the two no longer contend for one value. If the
   prompt ever ends up hidden or faded when it should not be, set
   HidePrompt = false in AutoQTE.ini, or drop WBP_DIS_Prompt_New_C from
-  HUDTweaks' watch list. Either one settles it.
+  that mod's watch list. Either one settles it.
 
   Quiet Dawn HUD uses the same capture-and-restore idiom on HUD widgets but
   does not currently target the DIS prompt.

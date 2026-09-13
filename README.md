@@ -171,9 +171,8 @@ the game crashes after the main menu. AutoQTE itself needs only the defaults
 
 ### Keys
 
-F4 and INS are the defaults because most other function keys are used by
-mods on this game: F1–F3 by another mod, F6/F11/F12 by the another mod, F7–F9
-by another mod, F10 by the UE4SS console. The mod refuses a key another UE4SS
+F4 and INS are the defaults because many other function keys are already used by other mods on this game, and F10
+is the UE4SS console. The mod refuses a key another UE4SS
 mod registered first, but it cannot see the game's own bindings.
 
 ### Tests

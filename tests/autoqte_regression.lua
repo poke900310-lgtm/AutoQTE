@@ -312,7 +312,7 @@ do  -- another HUD mod fades the same widget while AutoQTE has it hidden
   local a, w = scene()
   hooks[START](a)
   check("AutoQTE hid the prompt", w.vis == VIS_COLLAPSED, "vis=" .. tostring(w.vis))
-  w.vis = 3                       -- another mod mid-fade, after our write
+  w.vis = 3                       -- another HUD mod mid-fade, after our write
   hooks[DONE](a)
   check("the other mod's value survives", w.vis == 3, "vis=" .. tostring(w.vis))
 end

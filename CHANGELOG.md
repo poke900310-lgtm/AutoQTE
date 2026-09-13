@@ -195,8 +195,7 @@ number of documented instructions that did not work.
   from the new reference file** — your ini is never overwritten by an update, so
   this does not fix itself.
 - **Settings the documentation recommended are no longer discarded in silence.**
-  `DIS.HidePrompt = false` (the documented remedy for the another mod
-  interaction) and quoted key names such as `ToggleKey = "F4"` were both dropped
+  `DIS.HidePrompt = false` (the documented remedy for a HUD-mod interaction) and quoted key names such as `ToggleKey = "F4"` were both dropped
   without even a warning; the quoted form left the mod with no working keybinds.
   Both are now accepted, along with inline `;` comments and a UTF-8 BOM.
 - **Any ini line that cannot be parsed is now counted** in the

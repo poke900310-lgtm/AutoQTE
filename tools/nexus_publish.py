@@ -13,9 +13,12 @@ Nexus API v3. The flow, per the spec:
     GET  /uploads/{id}                 -> poll until state == available
     POST /mod-files/{id}/versions      -> becomes the newest version of the file
 
-Two headers on the PUT are part of the URL signature, so the upload is rejected if
-either is missing or does not match: Content-Disposition (the filename sent to
-/uploads) and Content-MD5 (base64 of the same digest, not the hex one).
+Three headers on the PUT are part of the URL signature (X-Amz-SignedHeaders is
+content-disposition;content-md5;content-type;host), so the upload is rejected if
+any is missing or does not match: Content-Disposition (the filename sent to
+/uploads), Content-MD5 (base64 of the digest, not the hex one), and Content-Type
+(application/octet-stream). The last one is the trap: urllib adds
+application/x-www-form-urlencoded on its own if you do not set it.
 
 md5 is optional until 2026-12-01 and required after. It is always sent here.
 """
@@ -32,7 +35,9 @@ import urllib.request
 API = "https://api.nexusmods.com/v3"
 GAME = "thebloodofdawnwalker"
 MOD = "456"                       # the id in the mod page URL
-MOD_FILE_NAME = "AutoQTE"         # which file on the page to add a version to
+MOD_FILE_NAME = "AutoQTE"         # what the file should be called, version-free
+RENAME_FILE = True                # rename the target file to MOD_FILE_NAME
+SET_PRIMARY = True                # make this version the default manager download
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # The API enforces these; failing here beats a 422 after the bytes are uploaded.
@@ -104,10 +109,15 @@ def main():
     # Resolve mod -> its files, so the new version lands on the right one.
     mod = call("GET", "/games/%s/mods/%s" % (GAME, MOD), key)["data"]
     files = call("GET", "/mods/%s/files" % mod["id"], key)["data"]["mod_files"]
+    # The page's files were named per-version ("AutoQTE 1.0.4"), so matching on
+    # MOD_FILE_NAME finds nothing. Fall back to the one active file: a version
+    # added there continues the update chain users already follow.
     match = [f for f in files if f["name"] == MOD_FILE_NAME]
+    if not match:
+        match = [f for f in files if f.get("is_active")]
     if len(match) != 1:
-        die("expected one mod file named %r, found: %s"
-            % (MOD_FILE_NAME, [f["name"] for f in files]))
+        die("could not pick a target file; found: %s"
+            % [(f["name"], f.get("is_active")) for f in files])
     mod_file = match[0]
 
     print("  mod            %s  (%s/%s)" % (mod.get("name") or mod["id"], GAME, MOD))
@@ -128,6 +138,11 @@ def main():
     # Both of these are signed into the URL; a mismatch is rejected.
     put.add_header("Content-Disposition", 'attachment; filename="%s"' % filename)
     put.add_header("Content-MD5", b64_md5)
+    # content-type is in X-Amz-SignedHeaders too, and urllib silently supplies
+    # application/x-www-form-urlencoded whenever a body is present - which does
+    # not match what Nexus signed, and S3 answers SignatureDoesNotMatch. Set it
+    # explicitly; octet-stream is the value that verifies.
+    put.add_header("Content-Type", "application/octet-stream")
     try:
         with urllib.request.urlopen(put) as r:
             print("  put            %d" % r.status)
@@ -151,8 +166,14 @@ def main():
         "file_category": "main",
         "update_mod_version": True,
         "archive_existing_file": True,
+        # primary=True currently sits on an ARCHIVED version, so the live file
+        # is not the default manager download. This moves it to the new one.
+        "primary_mod_manager_download": SET_PRIMARY,
     })["data"]
     print("  version id     %s" % made["version"]["id"])
+    if RENAME_FILE and mod_file["name"] != MOD_FILE_NAME:
+        call("PUT", "/mod-files/%s" % mod_file["id"], key, {"name": MOD_FILE_NAME})
+        print("  renamed       %r -> %r" % (mod_file["name"], MOD_FILE_NAME))
     print("\n  published %s as %s" % (filename, version))
     print("  https://www.nexusmods.com/%s/mods/%s?tab=files" % (GAME, MOD))
 

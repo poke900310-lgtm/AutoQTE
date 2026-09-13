@@ -41,19 +41,22 @@ cd AutoQTE
 python tools/build.py          # writes dist/AutoQTE-<version>.zip
 ```
 
-**Manual:** extract the archive into your game folder and merge `Dawnwalker`. It carries the full path, so the files land in
-`Dawnwalker\Binaries\Win64\ue4ss\Mods\`, so you end up with:
-
-> On **Xbox / Game Pass** the project folder is `WinGDK`, not `Win64` —
-> `Dawnwalker\Binaries\WinGDK\ue4ss\Mods\`. Only `<Project>\Binaries`
-> changes; `Engine\Binaries` stays `Win64`.
+**Manual:** extract the archive into your game folder — the one holding
+`Dawnwalker\` — and merge. It carries the full path, so the files land in place
+on their own:
 
 ```
 Dawnwalker\Binaries\Win64\ue4ss\Mods\AutoQTE\
     enabled.txt
+    README.txt
+    LICENSE.txt
     Scripts\main.lua
     Scripts\AutoQTE.defaults.ini
 ```
+
+> On **Xbox / Game Pass** the project folder is `WinGDK`, not `Win64` —
+> move the `AutoQTE` folder to `Dawnwalker\Binaries\WinGDK\ue4ss\Mods\`
+> afterwards. Only `<Project>\Binaries` changes; `Engine\Binaries` stays `Win64`.
 
 Copy `AutoQTE.defaults.ini` to `AutoQTE.ini` in that same folder if you want to
 change a setting. The mod runs fine without it.

@@ -20,8 +20,9 @@ especially: how long you hold decides whether the victim lives or dies, that set
 a persistent fact tag, and quest conditions read it. That is a story choice, not
 a chore, so the mod stays out of it.
 
-Tested on The Blood of Dawnwalker, Steam, build 25232147 (the 12 September 2026
-patch). All four hooks resolve and scenes auto-complete on that build.
+Tested on The Blood of Dawnwalker, Steam build 25232147 (the 12 September 2026
+patch), with UE4SS v1.2.1-rc6. All four hooks resolve and scenes auto-complete
+on that setup.
 
 ## Installation instructions
 
@@ -38,9 +39,18 @@ folder, so it deploys into place on its own.
 On Xbox / Game Pass the project folder is `Binaries\WinGDK`, not
 `Binaries\Win64`, so move the `AutoQTE` folder there afterwards.
 
-You should end up with `Mods\AutoQTE\enabled.txt` and
-`Mods\AutoQTE\Scripts\main.lua`. No `mods.txt` entry is needed - the mod loads
-from its own `enabled.txt`.
+You end up with:
+
+```
+Dawnwalker\Binaries\Win64\ue4ss\Mods\AutoQTE\
+    enabled.txt
+    README.txt
+    LICENSE.txt
+    Scripts\main.lua
+    Scripts\AutoQTE.defaults.ini
+```
+
+No `mods.txt` entry is needed - the mod loads from its own `enabled.txt`.
 
 **Configuration** - settings live in `AutoQTE.ini` beside `main.lua`. It is not
 shipped: create it, and it will survive mod updates, unlike

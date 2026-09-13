@@ -112,14 +112,10 @@ enabled.txt                   zero-byte marker UE4SS looks for
 README.txt / LICENSE.txt      shipped inside the mod folder
 BLOCKABLE-SCENES.md           every scene BlockAlso can name; generated
 CHANGELOG.md                  release notes
-NEXUS.md                      source of the Nexus page description
+NEXUS.md                      the Nexus page description
 tests/autoqte_regression.lua  regression suite
 tests/mutants.py              mutation battery for the suite
 tools/build.py                assembles dist/AutoQTE-<version>.zip
-tools/nexus_publish.py        uploads a built archive to Nexus (either edition)
-tools/nexus_bbcode.py         renders NEXUS.md to BBCode
-tools/nexus_inspect.py        read-only report of the Nexus page and files
-tools/check_conflict.py       scans another mod's archive for conflicts
 tools/pak/                    the .pak edition: patcher, build, scene list
 ```
 
@@ -245,19 +241,13 @@ patcher are in `tools/pak/README.md`.
 The pak edition is versioned separately from the Lua mod. It has no toggle,
 blocklist, ini or log, and it does not touch combat.
 
-## Release tooling
+## Building the archives
 
 ```
 python tools/build.py                    # dist/AutoQTE-<version>.zip; refuses debug flags left on
+python tools/pak/build_pak.py --game …   # the pak container; see tools/pak/README.md
 python tools/pak/build_archive.py        # dist/AutoQTE-PAK-<version>.zip
-python tools/nexus_bbcode.py             # NEXUS.md -> nexus-description.bbcode.txt (paste by hand)
-python tools/nexus_publish.py [--pak]    # dry run; add --publish to upload
-python tools/check_conflict.py <mod.zip> # does another mod hook or write what this one does
 ```
-
-`nexus_publish.py` needs `NEXUS_API_KEY` in the environment. The UE4SS archive
-becomes a new version of the main file; the pak archive becomes a new version
-of the optional file. The page description cannot be written through the API.
 
 ## Credits and licence
 

@@ -251,6 +251,6 @@ python tools/pak/build_archive.py        # dist/AutoQTE-PAK-<version>.zip
 
 ## Credits and licence
 
-AutoQTE is original work; it contains no code from another mod and bundles no
-part of UE4SS. Released under the MIT Licence, see `LICENSE.txt`. The Blood of
+UE4SS was used for data collection and the development of AutoQTE, and no part of
+UE4SS is bundled. Released under the MIT Licence, see `LICENSE.txt`. The Blood of
 Dawnwalker is © Rebel Wolves; this mod is unofficial and ships no game assets.

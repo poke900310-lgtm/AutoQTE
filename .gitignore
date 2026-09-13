@@ -13,9 +13,6 @@ AutoQTE.log
 /tools/lua/
 /tools/bin/
 
-# Nexus API key, if you keep it in the repo rather than the environment
-.nexus-key
-
 # Editor / OS
 __pycache__/
 *.py[cod]
@@ -43,6 +40,3 @@ aes.txt
 
 # Third-party proposed patches kept for review; never release content
 /patch/
-
-# Generated from NEXUS.md by tools/nexus_bbcode.py; paste into the Nexus page
-nexus-description.bbcode.txt

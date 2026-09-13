@@ -1,3 +1,18 @@
+## 1.0.6
+
+Added
+- A disclaimer and bug-reporting section, in the shipped `README.txt` as well as
+  on the mod page. It says plainly what the mod can and cannot take back: a
+  completed scene is indistinguishable from one you completed by hand, but the
+  mod removes the choice *not* to press, quest logic can tell a completed scene
+  from a cancelled one, and a few director graphs do more than hand out a
+  prompt. Save often, keep more than one save.
+- Reporting guidance: press F5 during the scene, set `Verbose = true` first so
+  the lines reach `AutoQTE.log`, and keep a save from just before if you can.
+
+No code changes; `Scripts/main.lua` differs from 1.0.5 only in the version
+string.
+
 ## 1.0.5
 
 Changed

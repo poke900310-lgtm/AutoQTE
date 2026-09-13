@@ -95,6 +95,31 @@ mods are fine; if one of them fades the prompt ring, set `HidePrompt = false`.
 If F4 or F5 are already taken by another mod, AutoQTE says so in the log and does
 not bind - change `ToggleKey` in the ini.
 
+## Disclaimer and reporting bugs
+
+Save often, and keep more than one save.
+
+AutoQTE finishes a prompt by calling the game's own `CompleteCurrentPrompt`, so a
+scene it completes is indistinguishable from one you completed by hand. What it
+does take away is the choice *not* to press. Quest logic can tell a completed
+scene from a cancelled one, and a few scene director graphs do more than hand out
+a prompt, so an auto-completed scene is not always something you can take back.
+
+Use it at your own risk. I can't undo a bugged save or a story outcome you didn't
+want, and the mod comes with no warranty - see `LICENSE.txt`.
+
+If something goes wrong, please report it. The most useful report is:
+
+- Press **F5** while the scene is still on screen. That writes the scene's
+  identity and state to the log.
+- Set `Verbose = true` in `AutoQTE.ini` first, so those lines also land in
+  `AutoQTE.log` beside `main.lua`. Otherwise they only reach `UE4SS.log`.
+- A save from just before the scene, if you still have one.
+
+The scene identity from F5 is usually enough to find the cause. If a scene
+misbehaves and you'd rather keep playing, `BlockAlso` takes a piece of that
+identity and leaves that scene to you, or F4 turns the mod off entirely.
+
 ## Shout outs
 
 UE4SS-RE and its contributors, none of this exists without the loader.

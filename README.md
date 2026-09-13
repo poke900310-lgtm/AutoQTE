@@ -3,74 +3,33 @@
 I made this mod because devs putting in unnecessary button prompts is the
 continuing bane of my existence.
 
-Auto-resolves the game's DIS quick-time prompts (the button-press and
-tap-repeatedly interactions) so they play out on their own. The scene is not
-skipped and nothing is faked: the mod calls the game's own
-`CompleteCurrentPrompt`, the same function your keypress calls, so the scene
-ends in the Completed state and every quest node downstream sees exactly what
-it expects. An optional blocklist lets you keep any scenes you would rather
-perform yourself.
+Dawnwalker puts a button prompt in front of a lot of small scenes. AutoQTE
+presses it for you. The scene is not skipped and nothing is faked: the mod
+calls the game's own `CompleteCurrentPrompt`, the same function your keypress
+calls, so the scene ends in the Completed state and every quest node downstream
+sees exactly what it expects.
 
 - **Nexus:** <https://www.nexusmods.com/thebloodofdawnwalker/mods/456>
-- **Version:** 1.0.8 (UE4SS edition) · .pak edition 1.0.1
-- **Game:** The Blood of Dawnwalker, UE 5.5.4 — verified on Steam build `25232147` (12 September 2026 patch); earlier builds of the same patch line also worked
-- **Requires:** a Dawnwalker-compatible [UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) 3.x install, already working
-- **Type:** Lua mod, this edition. No pak, no asset replacement, no Blueprint hooks, no shared library. A separate **.pak edition** exists for installs without UE4SS — see *Editions*.
-- **Touches:** nothing outside its own mod folder. No saves, no game settings, no other mod's files.
-
----
+- **Releases:** <https://github.com/poke900310-lgtm/AutoQTE/releases/latest>
+- **Version:** 1.0.8 (UE4SS edition) · 1.0.1 (.pak edition)
+- **Game:** The Blood of Dawnwalker, UE 5.5.4, verified on Steam build `25232147`
 
 ## Editions
 
-Two builds, one behaviour: complete the prompt through the game's own
-`CompleteCurrentPrompt`, and hide the prompt widget by setting its `Visibility`
-to `Collapsed`. Same function, same property, reached through different layers.
-
 | | UE4SS edition (recommended) | .pak edition |
 |---|---|---|
-| needs | a working Dawnwalker UE4SS install | nothing |
-| acts | only while a prompt is pending in a scene it has identified | every frame the scene actor ticks |
-| the widget | hidden per scene, restored when the scene ends | never drawn, game-wide |
-| control | F4 toggle, INS diagnose, `BlockAlso`, ini, log | none — all or nothing |
-| after a game patch | keeps working unless a function is renamed | must be rebuilt; it overrides two cooked assets |
-| conflicts | keybinds only | any mod overriding `BP_DIS` or `WBP_DIS_Prompt_New` |
+| requires | a working Dawnwalker UE4SS install | nothing |
+| controls | F4 toggle, INS diagnose, `BlockAlso`, ini, log | none |
+| after a game patch | keeps working unless a function is renamed | may need a rebuild |
 
-**Use the UE4SS edition unless you cannot run UE4SS.** It can be steered — a
-scene you would rather play yourself goes in `BlockAlso`, F4 turns it off
-mid-scene — and it writes a log you can attach to a bug report. The pak edition
-has neither. Install one or the other, not both.
-
-The pak edition ships as `AutoQTE-PAK-<version>.zip`: extract it into the game
-folder, or drop the three `AutoQTE_P.*` files into `Dawnwalker\Content\Paks\`.
-It is versioned on its own and rebuilt from `tools/pak/` — see
-`tools/pak/README.md`.
-
----
+Both complete the prompt through `CompleteCurrentPrompt` and hide the prompt
+widget by setting its `Visibility` to `Collapsed`. Use the UE4SS edition unless
+you cannot run UE4SS; install one or the other, not both.
 
 ## Install
 
-You need UE4SS running on Dawnwalker first. Stock UE4SS does not work on this
-game — use one of the prepared Dawnwalker UE4SS packages from Nexus, which
-already carry the engine-version override and the corrected hook set. If the
-game launches and `Dawnwalker\Binaries\Win64\ue4ss\UE4SS.log` is being written,
-you are ready.
-
-**Get the archive** from
-[Releases](https://github.com/poke900310-lgtm/AutoQTE/releases/latest), or
-install it from [Nexus](https://www.nexusmods.com/thebloodofdawnwalker/mods/456)
-if you use a mod manager — the Nexus page carries the mod-manager instructions.
-
-To work on the mod instead of just running it:
-
-```
-git clone https://github.com/poke900310-lgtm/AutoQTE.git
-cd AutoQTE
-python tools/build.py          # writes dist/AutoQTE-<version>.zip
-```
-
-**Manual:** extract the archive into your game folder — the one holding
-`Dawnwalker\` — and merge. It carries the full path, so the files land in place
-on their own:
+**UE4SS edition.** Extract the archive into your game folder and merge
+`Dawnwalker`, or install it with a mod manager. It carries the full path:
 
 ```
 Dawnwalker\Binaries\Win64\ue4ss\Mods\AutoQTE\
@@ -81,397 +40,227 @@ Dawnwalker\Binaries\Win64\ue4ss\Mods\AutoQTE\
     Scripts\AutoQTE.defaults.ini
 ```
 
-> On **Xbox / Game Pass** the project folder is `WinGDK`, not `Win64` —
-> move the `AutoQTE` folder to `Dawnwalker\Binaries\WinGDK\ue4ss\Mods\`
-> afterwards. Only `<Project>\Binaries` changes; `Engine\Binaries` stays `Win64`.
+No `mods.txt` entry is needed. On Xbox / Game Pass the project folder is
+`Binaries\WinGDK`; move the `AutoQTE` folder there afterwards. To uninstall,
+delete the folder.
 
-Copy `AutoQTE.defaults.ini` to `AutoQTE.ini` in that same folder if you want to
-change a setting. The mod runs fine without it.
+**.pak edition.** Extract `AutoQTE-PAK-<version>.zip` into the game folder, or
+drop the three `AutoQTE_P.*` files into `Dawnwalker\Content\Paks\`. To
+uninstall, delete them.
 
-Then start the game. Nothing else needs editing — `enabled.txt` is all UE4SS
-needs to start the mod.
+## Configuration
 
-The archive ships **no** `UE4SS-settings.ini`, **no** `mods.txt`, **no** pak and
-**no** loader files, so installing it cannot overwrite your UE4SS configuration
-or your load order.
+Settings live in `AutoQTE.ini` beside `main.lua`. It is not shipped: copy
+`AutoQTE.defaults.ini` to that name and edit the copy. It survives updates;
+the defaults file does not. Settings load at startup.
 
-### If UE4SS is not yet set up for this game
+```ini
+Enabled = true
+HidePrompt = true
+ToggleKey = F4
+DiagnoseKey = INS
+BlockAlso =
+Verbose = false
+```
 
-Two settings in `Dawnwalker\Binaries\Win64\ue4ss\UE4SS-settings.ini` are
-Dawnwalker requirements, not AutoQTE ones. A prepared Dawnwalker UE4SS package
-sets them for you; if you rolled your own, set them yourself:
+Key names are UE4SS names (`F4`, `INS`, `HOME`, `NUM_FIVE`); an empty value
+binds nothing. A UE4SS key fires alongside the game's own binding for that key,
+which is why the diagnose key is INS and not F5, the game's quicksave.
+
+## The blocklist
+
+Nothing is blocked by default. A DIS prompt has no failure state, so a scene
+AutoQTE completes reaches the same state as one played by hand. What
+auto-completion removes is the option to walk away from a scene instead of
+performing it; if you want that choice for the game's more pointed moments,
+add those scenes to `BlockAlso`. `AutoQTE.defaults.ini` carries a ready-made
+set of 13 patterns, commented out. `BLOCKABLE-SCENES.md` lists every scene a
+pattern can name.
+
+## Requirements and compatibility
+
+The UE4SS edition needs a Dawnwalker-compatible UE4SS 3.x install; stock UE4SS
+cannot detect this game's engine version, so use one of the prepared packages
+from Nexus. The mod uses four native hooks and two keybinds, ships no shared
+file, and does not touch `dwmapi.dll`, `UE4SS-settings.ini` or `mods.txt`. It
+conflicts only with another mod that drives the same DIS prompts. If F4 or INS
+is already taken by another mod, AutoQTE says so in the log and does not bind.
+
+The .pak edition conflicts with any mod that overrides `BP_DIS` or
+`WBP_DIS_Prompt_New`.
+
+## Disclaimer and reporting bugs
+
+Save often, and keep more than one save. A scene AutoQTE completes is
+indistinguishable from one you completed by hand, but the mod removes the
+choice *not* to press, and a few scene director graphs do more than hand out a
+prompt, so an auto-completed scene is not always something you can take back.
+Use it at your own risk; see `LICENSE.txt`.
+
+To report a problem: press **INS** while the scene is on screen, with
+`Verbose = true` set beforehand so the lines land in `AutoQTE.log`, and keep a
+save from just before the scene if you have one.
+
+---
+
+# Development
+
+```
+Scripts/main.lua              the UE4SS edition
+AutoQTE.defaults.ini          shipped reference config
+enabled.txt                   zero-byte marker UE4SS looks for
+README.txt / LICENSE.txt      shipped inside the mod folder
+BLOCKABLE-SCENES.md           every scene BlockAlso can name; generated
+CHANGELOG.md                  release notes
+NEXUS.md                      source of the Nexus page description
+tests/autoqte_regression.lua  regression suite
+tests/mutants.py              mutation battery for the suite
+tools/build.py                assembles dist/AutoQTE-<version>.zip
+tools/nexus_publish.py        uploads a built archive to Nexus (either edition)
+tools/nexus_bbcode.py         renders NEXUS.md to BBCode
+tools/nexus_inspect.py        read-only report of the Nexus page and files
+tools/check_conflict.py       scans another mod's archive for conflicts
+tools/pak/                    the .pak edition: patcher, build, scene list
+```
+
+## UE4SS edition
+
+`Scripts/main.lua` is a single file with no dependencies beyond UE4SS. It
+registers four native hooks and reacts:
+
+| hook | role |
+|---|---|
+| `InteractiveSceneObject:OnInteractiveScenePlaybackStarted` | adopt the scene, identify it, check the blocklist |
+| `DISLevelSequenceDirector:TriggerDISInteraction` | a prompt is pending: hide the widget, call `CompleteCurrentPrompt` |
+| `InteractiveSceneObject:OnCompletedInteractiveSceneNotification` | release the scene, restore the widget |
+| `InteractiveSceneObject:OnCancelledInteractiveSceneNotification` | same, on cancel |
+
+A scene is identified by the actor's full name joined with its level
+sequence's full name; `BlockAlso` patterns are substrings of that string.
+Only `BP_DIS_C` actors are handled, and a scene that cannot be identified is
+never automated.
+
+The prompt widget (`WBP_DIS_Prompt_New_C`, the actor's `Action Prompt`) is
+hidden by `SetVisibility(Collapsed)` and restored to its previous value when
+the scene ends. The mod only undoes its own write: if the widget no longer
+reads `Collapsed`, another mod changed it and that value stands. Every write is
+read back, and a read-back that is unreadable or not a number is treated as no
+evidence rather than as a failure.
+
+Every engine call is wrapped in `pcall`, because UE4SS returns truthy phantom
+userdata for members that do not exist; only scalar reads are trusted, and
+object identity is a `GetAddress()` plus full-name comparison, never Lua `==`.
+If `CompleteCurrentPrompt` is refused or returns without clearing the prompt,
+the widget is restored and the scene is handed back to the player.
+
+### UE4SS settings
+
+Two settings in `UE4SS-settings.ini` are requirements of the game, not the
+mod; the prepared packages set them:
 
 ```ini
 [EngineVersionOverride]
 MajorVersion = 5
 MinorVersion = 5
-```
 
-Stock UE4SS cannot detect this build's engine version. Without the override,
-object layouts are read wrong and mods behave erratically.
-
-```ini
 [Hooks]
 HookProcessLocalScriptFunction = 0
 ```
 
-**The game crashes shortly after the main menu with this at 1**, unless your
-UE4SS package supplies a Dawnwalker-specific signature for that function. The
-compiler inlined the function on this executable, so UE4SS's generic detector
-resolves it to `__security_check_cookie`; detouring that recurses and takes the
-process down.
+Without the override, object layouts are read wrong. With the hook enabled
+and no Dawnwalker-specific signature, UE4SS detours a stack-check routine and
+the game crashes after the main menu. AutoQTE itself needs only the defaults
+(`HookUObjectProcessEvent = 1`, `HookEngineTick = 1`).
 
-AutoQTE runs on the UE4SS defaults for everything else
-(`HookUObjectProcessEvent = 1`, `HookEngineTick = 1`) and needs **nothing turned
-off**, so leave the rest of `[Hooks]` exactly as your UE4SS package shipped it.
-Mods that need Blueprint hooking keep working alongside it.
+### Keys
 
-## Upgrading
+F4 and INS are the defaults because most other function keys are used by
+mods on this game: F1–F3 by DawnWALKING, F6/F11/F12 by the Cheat Menu, F7–F9
+by HUDTweaks, F10 by the UE4SS console. The mod refuses a key another UE4SS
+mod registered first, but it cannot see the game's own bindings.
 
-Overwrite the folder in place. An update replaces `Scripts\main.lua` and
-`Scripts\AutoQTE.defaults.ini`; your own `AutoQTE.ini` is not in the archive
-and is left alone. **Do not delete the folder first** — that deletes your
-settings with it. Close the game first; there is no hot reload.
-
-## Uninstall
-
-Delete `Dawnwalker\Binaries\Win64\ue4ss\Mods\AutoQTE\`. That is the whole uninstall.
-Nothing is written anywhere else, and no save data is affected — scenes AutoQTE
-completed are indistinguishable from scenes you completed by hand, so existing
-saves stay valid.
-
-To turn it off without uninstalling, delete `enabled.txt`, or press the toggle
-key in-game.
-
----
-
-## What it does
-
-Dawnwalker's DIS (Dialogue Interaction Scene) system pauses a scripted sequence
-and waits for a button press or a tap-repeatedly prompt before continuing.
-AutoQTE hooks four **native** engine functions on the scene object and, when a
-prompt goes pending, calls the game's own `CompleteCurrentPrompt` and hides the
-prompt widget. The scene then continues exactly as if you had pressed the button
-on time.
-
-- It uses the game's own completion path. It does not inject input, patch
-  memory, or modify assets.
-- It only ever resolves a prompt in the direction the game already treats as
-  success: it calls the scene's own `CompleteCurrentPrompt`, which is what fires
-  `OnPromptSuccess`.
-- It is idle when no DIS scene is running. The hooks fire only on scene
-  start/complete/cancel and on the prompt trigger.
-
-## What it does *not* do
-
-Each of these was examined and deliberately left alone:
-
-| System | Why it is untouched |
-|---|---|
-| Hold-to-interact (doors, chests, loot) | Not a QTE, and the underlying getters fire for anything merely focused and in range — automating it would trigger interactables you walk past. |
-| Drink Blood | Hold duration decides unconscious vs. drained, which sets a persistent fact tag and is read by quest conditions — the hold *is* the choice. Automation was built and removed in 1.0.7: `bButtonPressed` is never read, driving `TickDrinking` advances the stages but the game sees no input (no drain meter), and `InputDrinkBlood` is edge-triggered, so a second press aborts the feed. Your call, not the mod's. |
-| Parry | Ordinary combat timing. No prompt exists. |
-| Finishers | No input window at all — success is rolled before the animation. Nothing to skip. |
-| Inspections | Structurally similar to DIS, but self-paced with no timer and no fail state, and each hotspot plays narrative VO. Automating it would skip content. |
-
-## The blocklist
-
-Nothing is blocked by default, because nothing needs to be. A DIS prompt has no
-failure state: the scene-end type is `Completed`, `CancelledByPlayer` or
-`CancelledByQuestNode`, and `CompleteCurrentPrompt` always reports success. A
-scene AutoQTE completes reaches the same state as one played by hand.
-
-What auto-completion removes is the option to walk away from a scene instead
-of performing it. If you would rather keep that choice for the game's more
-pointed moments — striking someone, a bowl of poison, a ritual — put those
-scenes in `BlockAlso`. `AutoQTE.defaults.ini` carries a ready-made set of 13
-patterns covering 18 such scenes, commented out and annotated; uncomment it,
-trim it, or ignore it.
-
-A blocked scene is left untouched: the prompt appears and you play it. The
-log records `BLOCKED (<entry>) - left to the player`.
-
-`BLOCKABLE-SCENES.md` lists every scene a pattern can name — all 59, derived
-from the game's containers by asset class — and shows which of them the
-reference set covers. It is generated by `tools/pak/list_dis_scenes.py`;
-regenerate it after a game patch rather than editing it.
-
----
-
-## Configuration
-
-Settings live in **`AutoQTE.ini`**, beside `main.lua` in the `Scripts` folder.
-
-`AutoQTE.defaults.ini` ships as a commented reference and **is replaced on
-update**. Copy it to `AutoQTE.ini` and edit that — `AutoQTE.ini` is never
-shipped and never overwritten, so your settings survive a mod update. If
-neither file exists, the built-in defaults apply. Settings are read once at
-startup; restart after editing.
-
-| Setting | Default | Effect |
-|---|---|---|
-| `Enabled` | `true` | Master switch; the toggle key flips it in game. |
-| `HidePrompt` | `true` | Hide the prompt ring while a scene is skipped. Set `false` if a HUD mod also manages that widget. |
-| `ToggleKey` / `DiagnoseKey` | `F4` / `INS` | UE4SS key names. Empty binds nothing. |
-| `BlockAlso` | *(empty)* | Extra scenes to leave alone, comma separated. |
-| `Verbose` | `false` | Also write `AutoQTE.log` beside `main.lua`. |
-| `LogEveryCompletion` | `false` | One line per prompt. Noisy; for diagnosing one scene. |
-
-Press the diagnose key during a scene and read the **`scene:`** line it logs —
-that is the identity `BlockAlso` matches against. Take a distinctive lowercase
-fragment of the level-sequence half (`vasylflogging`), not of the `actor:` line,
-which is a per-instance GUID that will not match again after a reload.
-
-### Keybinds
-
-```ini
-ToggleKey = F4
-DiagnoseKey = INS
-```
-
-F4 and INS are the defaults because most of the other function keys are
-already used by mods on this game:
-
-| Key | Claimed by |
-|---|---|
-| F1, F2, F3 | DawnWALKING |
-| F6 | Cheat Menu (open/close), Vampire Form Toggle |
-| F7 | HUDTweaks (reload), CursorFix |
-| F8 | HUDTweaks (toggle) |
-| F9 | HUDTweaks (scan), Ultrawide Fix |
-| F10 | UE4SS console, Ultrawide Fix |
-| F11 | Cheat Menu, Ultrawide Fix |
-| F12 | Cheat Menu, and Steam's screenshot key |
-
-Each entry is a UE4SS key name written without quotes — `ToggleKey = F4`,
-`DiagnoseKey = HOME`, `ToggleKey = NUM_FIVE`. An empty value binds nothing.
-Modifier combinations are not supported. UE4SS's own binds are `Ctrl` combos
-and do not collide.
-
-The mod refuses a key another UE4SS mod registered first, but it cannot see
-the game's own bindings, and a UE4SS key fires alongside a game binding rather
-than instead of it. That is why the diagnose key is INS rather than F5: F5 is
-the game's quicksave. The game binds nothing on INS.
-
----
-
-## Compatibility
-
-AutoQTE is built to be a non-event for the rest of your load order:
-
-- **Ships one mod folder.** No shared file is in the archive — no
-  `UE4SS-settings.ini`, no `mods.txt`, no `mods.json`, no pak, no `LogicMods`
-  content, no `shared\` library. Installing it cannot damage an existing setup.
-- **Uses `enabled.txt`, not `mods.txt`.** UE4SS starts mods from `mods.txt`
-  *and*, separately, from any mod folder containing an `enabled.txt`. Shipping a
-  `mods.txt` would replace your load order with the author's; shipping
-  `enabled.txt` starts this mod and leaves your load order untouched.
-- **Requires no hook to be disabled**, so mods that need Blueprint hooking are
-  unaffected.
-- **Hooks four game-specific functions** on `InteractiveSceneObject` and
-  `DISLevelSequenceDirector`. Nothing else plausibly hooks those, and if
-  something does, both hooks still run — UE4SS chains them.
-- **Depends on no shared Lua library** — not `UEHelpers`, not `BPModLoader` —
-  so there is no version to keep in step with anything.
-- **Warns instead of shadowing** if a keybind is already taken by a mod that
-  loaded earlier.
-- **Writes to exactly one shared thing**, and only during a skip: `Visibility`
-  on the live `WBP_DIS_Prompt_New_C` prompt widget, set to `Collapsed` while
-  `HidePrompt` is on. It restores the widget only while the value still reads
-  `Collapsed`, so another mod's value is never overwritten. `HidePrompt = false`
-  avoids the interaction entirely.
-- **Known HUD interaction.** *HUDTweaks – Fixes* lists `WBP_DIS_Prompt_New_C` in
-  its fade watch list and writes `RenderOpacity` to it — a different property,
-  so the two mods do not contend for one value. If the prompt is ever left
-  hidden or faded, set `HidePrompt = false`, or drop that widget from HUDTweaks'
-  watch list. *Quiet Dawn HUD* does not target the DIS prompt.
-- **Input remaps are irrelevant.** AutoQTE never simulates a keypress — it calls
-  the scene's own `CompleteCurrentPrompt` — so controller vs. keyboard and any
-  Enhanced Input remap (*Controller Tweaks & Remap*) do not affect it.
-- **Prerequisite conflicts are not mod conflicts.** Two different Dawnwalker
-  UE4SS packages will fight over `dwmapi.dll`, `UE4SS-settings.ini` and
-  `mods.txt`. Install one UE4SS package and put mods on top. AutoQTE ships none
-  of those files.
-- **Conflicts only with another QTE mod** touching the same DIS system. Run one
-  or the other.
-
----
-
-## Troubleshooting
-
-The lines below appear in the UE4SS console, in
-`Dawnwalker\Binaries\Win64\ue4ss\UE4SS.log`, and — if you set `Verbose = true` —
-in `AutoQTE.log` inside the mod folder. All are prefixed `[AutoQTE]` in the
-console.
-
-**Nothing in the log at all; the mod never loaded**
-`enabled.txt` is missing, or the folder is in the wrong place. The path must be
-`ue4ss\Mods\AutoQTE\Scripts\main.lua`, with the `Scripts` subfolder. Confirm
-UE4SS is running at all: `UE4SS.log` should exist and be recent.
-
-**`FAILED to hook <name> (...)`**
-The function was not found. Almost always the game was patched and the class or
-function was renamed, or the engine-version override is missing. Check
-`[EngineVersionOverride]` is `5` / `5`. If all four fail, UE4SS is not resolving
-game symbols at all — a UE4SS/game-version problem, not an AutoQTE one. If some
-hook and some do not, the build has changed and the mod needs re-verifying
-against it. Any single failure unregisters the hooks that did succeed and
-disables the mod entirely — it never runs on a partial hook set.
-
-**`AutoQTE v1.0.8 loaded (0 blocklist patterns)` but nothing happens in a scene**
-Either the scene is blocklisted — look for a `BLOCKED` line — or it never
-started under a class the mod recognises. If you see `scene started` but never
-`skipped:`, the prompt is not registering as pending: press the diagnose
-key during the prompt and check `IsPaused`. If `IsPaused = false` while a prompt
-is visible on screen, that is not a DIS prompt and AutoQTE is not meant to
-handle it.
-
-**`BLOCKED (<entry>) - left to the player: <actor>`**
-Working as intended: that scene is on the blocklist. If you want it automated,
-remove the named entry from `BlockAlso`.
-
-**`BLOCKED (unidentified scene)`**
-The mod could not read the scene's level sequence, so it could not tell whether
-the scene is blocklisted — and it refuses to automate a scene it cannot
-identify. This is the safe failure. It usually means a game patch changed
-`GetInteractiveSceneLevelSequence`. Play that prompt manually, and report the
-build.
-
-**`scene started (playback started)` … `scene ended (completed) - dormant`**
-Normal. That is one scene handled end to end.
-
-**`trigger fired but no scene tracked`**
-A prompt fired for a scene the mod is not following — usually a blocklisted one
-(expected), or a scene already running when the mod loaded. Harmless.
-
-**`CompleteCurrentPrompt was refused - left to the player: <scene>`**
-The mod hid the prompt, asked the game to complete it, and the call did not go
-through — so it put the prompt back and let go of the scene. You play that one
-by hand. If it happens on every scene, a game patch changed `BP_DIS_C` and the
-mod needs re-verifying against the new build.
-
-**`could not check whether F4 is free - not binding`** / **`F4 could not be bound on this UE4SS build`**
-The keybind API did not answer, or refused the bind. AutoQTE leaves the key
-alone rather than risk taking it from another mod. Auto-resolving still works;
-only the key is missing.
-
-**`F4 is already claimed by another mod - not binding; change it in AutoQTE.ini`**
-Exactly what it says. Pick a different key with `ToggleKey` in `AutoQTE.ini`. This check only
-sees mods that loaded before AutoQTE, so a silent clash with one that loads
-later is still possible — if a key does nothing, change it.
-
-**Prompt widget stays invisible after a scene**
-Widget visibility is restored when a scene ends; if a scene is torn down
-abnormally the restore can be missed. Cosmetic and per-session — reloading a
-save clears it. `HidePrompt = false` avoids it altogether.
-
-**Game crashes on launch or shortly after the main menu**
-Not AutoQTE — remove it and confirm. The usual cause on this game is
-`HookProcessLocalScriptFunction = 1` without a Dawnwalker-specific signature.
-
----
-
-## Known limitations
-
-- **Resolved by name, not by address**, so the mod is not tied to a storefront
-  or a build number. What a game patch can break is the names themselves: the
-  four hooked functions and the level-sequence paths the blocklist matches.
-- **Failure is quiet and safe.** If a hook cannot be installed or a scene
-  cannot be identified, AutoQTE does nothing and the game behaves normally.
-- **The blocklist is a matter of taste**, not safety. Nothing is blocked by
-  default; add what you want to perform yourself.
-- **No on-screen indication.** A skipped scene is recorded in the log only;
-  the game ships no widget that could carry a notice during open-world play.
-- **No console commands.** `ProcessConsoleExec` is unavailable in this title;
-  configuration is the ini and the two keys.
-
-## After a game update
-
-Re-check in this order before trusting the mod on a new build:
-
-1. Game still launches with UE4SS attached.
-2. All four `hooked …` lines appear in the log. Any `FAILED to hook` means a
-   class or function was renamed — stop here.
-3. Enter one ordinary, non-blocklisted DIS scene. Expect `scene started`,
-   `skipped:`, `scene ended (completed)`.
-4. Enter one blocklisted scene. Expect `BLOCKED (<entry>)` and a live prompt you
-   have to play yourself.
-5. Watch for `BLOCKED (unidentified scene)` anywhere. One occurrence means scene
-   identification broke and the blocklist is no longer protecting anything — the
-   mod is failing safe, but it is failing.
-6. If the patch added quests or scenes, re-derive the DIS scene list and re-audit
-   any `BlockAlso` patterns you added, rather than assuming they still match.
-
-## Development
-
-The mod is a single file: `Scripts/main.lua`. There is nothing to compile.
-
-```
-Scripts/main.lua              the mod
-AutoQTE.defaults.ini          shipped reference config (installs into Scripts/)
-CHANGELOG.md                  release notes
-enabled.txt                   zero-byte marker UE4SS looks for
-README.txt / LICENSE.txt      shipped inside the mod folder in the archive
-BLOCKABLE-SCENES.md           every scene BlockAlso can name; generated, not edited
-tests/autoqte_regression.lua  regression suite
-tests/mutants.py              proves the suite can actually fail
-tools/build.py                assembles dist/AutoQTE-<version>.zip
-tools/check_conflict.py       scans another mod's archive for conflicts with this one
-tools/nexus_publish.py        uploads a built archive as a new Nexus file version
-tools/nexus_inspect.py        read-only report of the Nexus page and files
-tools/nexus_bbcode.py         renders NEXUS.md to the Nexus description BBCode
-tools/pak/                    the .pak edition: patcher, build, scene list (own README)
-```
-
-Run the suite against any copy of the mod — a working tree, or the file in a
-live install:
+### Tests
 
 ```
 lua54.exe tests/autoqte_regression.lua Scripts/main.lua
-```
-
-It stubs the UE4SS globals, including the truthy-phantom behaviour for members
-that do not exist, and asserts only on observables: whether
-`CompleteCurrentPrompt` was called, on what, what was logged, and what visibility
-the prompt widget was left at.
-
-A green suite means nothing on its own, so every assertion is mutation-tested:
-
-```
 python tests/mutants.py <path to lua54.exe>
 ```
 
-Each mutant breaks one behaviour and the suite must go red. Any `SURVIVED` line
-is a hole.
+The suite stubs the UE4SS globals, including the phantom-userdata behaviour,
+and asserts only on observables: what was called, on what, what was logged,
+and what visibility the widget was left at. Every assertion is mutation-tested;
+each mutant breaks one behaviour and the suite must go red. Mutation anchors
+are literal source snippets, so a reflow of `main.lua` may need them
+repointed.
 
-To check whether another mod can conflict, point this at its release archive:
+### Reading the log
+
+Lines appear in the UE4SS console, in `UE4SS.log`, and with `Verbose = true`
+in `AutoQTE.log` beside `main.lua`.
+
+| line | meaning |
+|---|---|
+| `hooked …` ×4 | normal startup |
+| `FAILED to hook …` | a game update renamed a function; the mod disables itself |
+| `scene started …` / `scene ended (completed)` | one scene handled |
+| `skipped: <scene>` | one auto-resolved scene; grep for this to see everything the mod did |
+| `BLOCKED (<entry>)` | the scene is in `BlockAlso` |
+| `BLOCKED (unidentified scene)` | the scene could not be identified and was left alone; report the build |
+| `CompleteCurrentPrompt was refused - left to the player` | the call did not go through; the prompt was restored |
+| `trigger fired but no scene tracked` | a prompt in a scene the mod is not following; harmless |
+
+### After a game update
+
+1. Confirm the four `hooked` lines.
+2. Play one ordinary scene: expect `scene started`, `skipped:`, `scene ended (completed)`.
+3. Play one blocklisted scene: expect `BLOCKED`.
+4. If `BLOCKED (unidentified scene)` appears, identification broke; the mod is
+   failing safe but not working.
+5. Regenerate `BLOCKABLE-SCENES.md` and re-check any patterns you added.
+
+## .pak edition
+
+The pak edition overrides two cooked assets so that the game does on its own
+what the Lua edition does through hooks:
+
+| asset | change |
+|---|---|
+| `BP_DIS` | the `ReceiveTick` event thunk enters the ubergraph at `CompleteCurrentPrompt`'s offset (two bytes of `.uexp`) |
+| `WBP_DIS_Prompt_New` | class-default `Visibility` set to `Collapsed` |
+
+`ReceiveTick` is the target because the engine calls it through `ProcessEvent`,
+and BP_DIS only ticks while a prompt is running. `StartCurrentPrompt` cannot be
+used: a Blueprint calling its own event bypasses the thunk. Both edits are
+needed, since completing a prompt does not take its widget down.
+
+`tools/pak/build_pak.py` extracts the two assets with retoc, proves a lossless
+round-trip, applies both edits by name, verifies that the only changed bytes
+are the offset literal, and repacks to an IoStore container. Nothing is
+hardcoded, so a game patch that recompiles `BP_DIS` needs a rebuild rather
+than a new analysis. The AES key is passed per build and never stored; the
+mappings file lives in the gitignored `tools/bin/`. The container installs in
+`Content\Paks` itself. Details, prerequisites and the inspection modes of the
+patcher are in `tools/pak/README.md`.
+
+The pak edition is versioned separately from the Lua mod. It has no toggle,
+blocklist, ini or log, and it does not touch combat.
+
+## Release tooling
 
 ```
-python tools/check_conflict.py <mod.zip>
+python tools/build.py                    # dist/AutoQTE-<version>.zip; refuses debug flags left on
+python tools/pak/build_archive.py        # dist/AutoQTE-PAK-<version>.zip
+python tools/nexus_bbcode.py             # NEXUS.md -> nexus-description.bbcode.txt (paste by hand)
+python tools/nexus_publish.py [--pak]    # dry run; add --publish to upload
+python tools/check_conflict.py <mod.zip> # does another mod hook or write what this one does
 ```
 
-It reports whether the mod hooks the DIS system, drives the same level-sequence
-player, writes the prompt widget, binds F4/INS, ships a shared UE4SS file,
-installs a second proxy DLL, or vendors a `Mods/shared` library. Use a release
-archive rather than a source checkout; mod repositories often vendor copies of
-other mods, which read as false positives.
-
-To build the release archive:
-
-```
-python tools/build.py
-```
-
-It refuses to package a file with `Verbose` or `LogEveryCompletion` left on.
+`nexus_publish.py` needs `NEXUS_API_KEY` in the environment. The UE4SS archive
+becomes a new version of the main file; the pak archive becomes a new version
+of the optional file. The page description cannot be written through the API.
 
 ## Credits and licence
 
-AutoQTE is original work. It contains no code from another mod or project, and
-depends on no UE4SS shared library. It requires
-[UE4SS](https://github.com/UE4SS-RE/RE-UE4SS) at runtime but bundles none of it
-— install UE4SS separately.
-
-Released under the MIT Licence; see `LICENSE.txt`.
-
-The Blood of Dawnwalker is © Rebel Wolves. This mod is unaffiliated and
-unofficial, and ships no game assets.
+AutoQTE is original work; it contains no code from another mod and bundles no
+part of UE4SS. Released under the MIT Licence, see `LICENSE.txt`. The Blood of
+Dawnwalker is © Rebel Wolves; this mod is unofficial and ships no game assets.

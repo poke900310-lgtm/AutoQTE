@@ -4,6 +4,7 @@ r"""Publish the built archive to Nexus Mods as a new version of an existing file
     set NEXUS_API_KEY=...                       (https://www.nexusmods.com/settings/api-keys)
     python tools/nexus_publish.py               # dry run: resolve and print the plan
     python tools/nexus_publish.py --publish     # actually upload
+    python tools/nexus_publish.py --pak ...     # the .pak edition, a separate file
 
 Nexus API v3. The flow, per the spec:
 
@@ -36,6 +37,7 @@ API = "https://api.nexusmods.com/v3"
 GAME = "thebloodofdawnwalker"
 MOD = "456"                       # the id in the mod page URL
 MOD_FILE_NAME = "AutoQTE"         # what the file should be called, version-free
+PAK_FILE_NAME = "AutoQTE (.pak edition)"   # the UE4SS-free edition, a separate file
 RENAME_FILE = True                # rename the target file to MOD_FILE_NAME
 SET_PRIMARY = True                # make this version the default manager download
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -68,19 +70,27 @@ def call(method, path, key, body=None, expect=(200, 201, 204)):
         die("%s %s -> %d\n%s" % (method, path, e.code, detail))
 
 
-def archive():
+def archive(pak):
+    # Two editions now build into the same directory, so "the one archive" is no
+    # longer a safe assumption: pick by edition and still require it to be
+    # unambiguous within that edition.
     dist = os.path.join(ROOT, "dist")
     zips = [f for f in os.listdir(dist) if f.startswith("AutoQTE-") and f.endswith(".zip")]
-    if len(zips) != 1:
-        die("expected exactly one archive in dist/, found %d: %s" % (len(zips), zips))
-    return os.path.join(dist, zips[0])
+    want = [f for f in zips if ("-PAK-" in f) == pak]
+    if len(want) != 1:
+        die("expected exactly one %s archive in dist/, found %d: %s"
+            % ("pak" if pak else "UE4SS", len(want), want or zips))
+    return os.path.join(dist, want[0])
 
 
-def version_of(path):
-    src = open(os.path.join(ROOT, "Scripts", "main.lua"), encoding="utf-8").read()
-    m = re.search(r'local VERSION = "([^"]+)"', src)
+def version_of(path, pak):
+    # Each edition carries its own version, in the file that actually defines it.
+    src_file = (os.path.join(ROOT, "tools", "pak", "build_archive.py") if pak
+                else os.path.join(ROOT, "Scripts", "main.lua"))
+    src = open(src_file, encoding="utf-8").read()
+    m = re.search(r'VERSION = "([^"]+)"', src)
     if not m:
-        die("could not read VERSION from Scripts/main.lua")
+        die("could not read VERSION from %s" % os.path.relpath(src_file, ROOT))
     v = m.group(1)
     if v not in os.path.basename(path):
         die("archive %s does not carry version %s - rebuild first" % (os.path.basename(path), v))
@@ -93,29 +103,44 @@ def main():
     if not key:
         die("set NEXUS_API_KEY (https://www.nexusmods.com/settings/api-keys)")
 
-    path = archive()
-    version = version_of(path)
+    pak = "--pak" in sys.argv
+    file_name = PAK_FILE_NAME if pak else MOD_FILE_NAME
+    path = archive(pak)
+    version = version_of(path, pak)
     blob = open(path, "rb").read()
     digest = hashlib.md5(blob).digest()
     hex_md5 = digest.hex()
     b64_md5 = base64.b64encode(digest).decode()
     filename = os.path.basename(path)
 
-    if not NAME_RE.match(MOD_FILE_NAME) or len(MOD_FILE_NAME) > 50:
-        die("mod file name %r fails the API's pattern" % MOD_FILE_NAME)
+    if not NAME_RE.match(file_name) or len(file_name) > 50:
+        die("mod file name %r fails the API's pattern" % file_name)
     if not VERSION_RE.match(version) or len(version) > 50:
         die("version %r fails the API's pattern" % version)
 
     # Resolve mod -> its files, so the new version lands on the right one.
     mod = call("GET", "/games/%s/mods/%s" % (GAME, MOD), key)["data"]
     files = call("GET", "/mods/%s/files" % mod["id"], key)["data"]["mod_files"]
-    # The page's files were named per-version ("AutoQTE 1.0.4"), so matching on
-    # MOD_FILE_NAME finds nothing. Fall back to the one active file: a version
-    # added there continues the update chain users already follow.
-    match = [f for f in files if f["name"] == MOD_FILE_NAME]
-    if not match:
+    match = [f for f in files if f["name"] == file_name]
+    if not match and pak:
+        # The pak file was created on the site by hand under a working title
+        # ("BETA - AutoQTE PAK 1.0.0 ..."). Any file with PAK in its name is
+        # that one; the UE4SS files never carry it. It is renamed to the clean
+        # name on publish.
+        match = [f for f in files if "PAK" in f["name"]]
+    if not match and not pak:
+        # The page's files were once named per-version ("AutoQTE 1.0.4"), so an
+        # exact match can miss. Falling back to the single active file continues
+        # the update chain users already follow.
         match = [f for f in files if f.get("is_active")]
     if len(match) != 1:
+        if pak:
+            # No fallback here on purpose: the nearest match would be the UE4SS
+            # file, and adding a pak as a version of it would push the wrong
+            # download to everyone already following that file.
+            die("no mod file named %r on the page. The two editions are separate\n"
+                "downloads, so create that file once on the site and re-run.\n"
+                "found: %s" % (file_name, [f["name"] for f in files]))
         die("could not pick a target file; found: %s"
             % [(f["name"], f.get("is_active")) for f in files])
     mod_file = match[0]
@@ -126,6 +151,8 @@ def main():
     print("  archive        %s  %d bytes" % (filename, len(blob)))
     print("  version        %s" % version)
     print("  md5            %s" % hex_md5)
+    if RENAME_FILE and mod_file["name"] != file_name:
+        print("  will rename    %r -> %r" % (mod_file["name"], file_name))
     if not publish:
         print("\n  dry run - nothing uploaded. Re-run with --publish.")
         return
@@ -161,19 +188,20 @@ def main():
 
     made = call("POST", "/mod-files/%s/versions" % mod_file["id"], key, {
         "upload_id": up["id"],
-        "name": MOD_FILE_NAME,
+        "name": file_name,
         "version": version,
-        "file_category": "main",
-        "update_mod_version": True,
+        # The UE4SS edition is the main file and carries the mod's version; the
+        # pak is an optional file with its own version and must not become the
+        # default manager download or relabel the page.
+        "file_category": "optional" if pak else "main",
+        "update_mod_version": not pak,
         "archive_existing_file": True,
-        # primary=True currently sits on an ARCHIVED version, so the live file
-        # is not the default manager download. This moves it to the new one.
-        "primary_mod_manager_download": SET_PRIMARY,
+        "primary_mod_manager_download": SET_PRIMARY and not pak,
     })["data"]
     print("  version id     %s" % made["version"]["id"])
-    if RENAME_FILE and mod_file["name"] != MOD_FILE_NAME:
-        call("PUT", "/mod-files/%s" % mod_file["id"], key, {"name": MOD_FILE_NAME})
-        print("  renamed       %r -> %r" % (mod_file["name"], MOD_FILE_NAME))
+    if RENAME_FILE and mod_file["name"] != file_name:
+        call("PUT", "/mod-files/%s" % mod_file["id"], key, {"name": file_name})
+        print("  renamed       %r -> %r" % (mod_file["name"], file_name))
     print("\n  published %s as %s" % (filename, version))
     print("  https://www.nexusmods.com/%s/mods/%s?tab=files" % (GAME, MOD))
 

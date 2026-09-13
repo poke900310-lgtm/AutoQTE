@@ -25,12 +25,22 @@ def version_of(path):
     return m.group(1)
 
 
+# Full path from the game folder, so one archive serves both routes: extract it
+# into the game folder and it merges into place, and a mod manager deploying
+# relative to the game root lands the same files in the same spots. This is what
+# the other Dawnwalker Lua mods ship; the old Data/ prefix was a a mod manager-only
+# convention that left manual installers digging a folder deeper than everyone
+# else's instructions told them to.
+MODPATH = "Dawnwalker/Binaries/Win64/ue4ss/Mods/AutoQTE/"
 ENTRIES = [
-    ("Data/AutoQTE/enabled.txt",      "enabled.txt"),
-    ("Data/AutoQTE/Scripts/main.lua", "Scripts/main.lua"),
-    ("Data/AutoQTE/Scripts/AutoQTE.defaults.ini", "AutoQTE.defaults.ini"),
-    ("README.txt",                    "README.txt"),
-    ("LICENSE.txt",                   "LICENSE.txt"),
+    (MODPATH + "enabled.txt",                 "enabled.txt"),
+    (MODPATH + "Scripts/main.lua",            "Scripts/main.lua"),
+    (MODPATH + "Scripts/AutoQTE.defaults.ini", "AutoQTE.defaults.ini"),
+    # Inside the mod folder, not the archive root: extracting into the game
+    # folder would otherwise drop them loose in the game directory, and they
+    # would not be removed when the mod folder is deleted.
+    (MODPATH + "README.txt",                  "README.txt"),
+    (MODPATH + "LICENSE.txt",                 "LICENSE.txt"),
 ]
 
 

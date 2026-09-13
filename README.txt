@@ -1,5 +1,5 @@
 ================================================================================
-AutoQTE v1.0.4  -  The Blood of Dawnwalker
+AutoQTE v1.0.5  -  The Blood of Dawnwalker
 An UNOFFICIAL fan-made mod. Not affiliated with or endorsed by Rebel Wolves.
 Auto-resolves quick-time prompts in Dialogue Interaction Scenes.
 ================================================================================
@@ -77,13 +77,17 @@ minimal hook set, and it tolerates either DLL variant.
 INSTALL
 --------------------------------------------------------------------------------
 
-Copy the folder   Data\AutoQTE   from this archive into:
+Extract this archive into your game folder and merge Dawnwalker:
 
-    <Game>\Dawnwalker\Binaries\Win64\ue4ss\Mods\
+    <Game>\The Blood of Dawnwalker\
 
-On Xbox / Game Pass that folder is Binaries\WinGDK, not Binaries\Win64.
+The archive carries the full path, so the files land in the right place on
+their own. A mod manager deploying relative to the game folder does the same.
 
-So that you end up with:
+On Xbox / Game Pass the project folder is Binaries\WinGDK, not Binaries\Win64,
+so move the AutoQTE folder there afterwards.
+
+Either way you end up with:
 
     ...\ue4ss\Mods\AutoQTE\enabled.txt
     ...\ue4ss\Mods\AutoQTE\Scripts\main.lua
@@ -92,8 +96,8 @@ So that you end up with:
 Copy AutoQTE.defaults.ini to AutoQTE.ini beside it if you want to change
 a setting. The mod runs fine without it.
 
-That is the whole mod. Do not copy README.txt or LICENSE.txt into the game
-folder - they are documentation only.
+README.txt and LICENSE.txt sit in that same folder. They are documentation
+only; the mod ignores them, and deleting the folder removes them with it.
 
 You do NOT need to edit mods.txt. The enabled.txt file is enough on its own, and
 shipping a mods.txt would overwrite your load order.
@@ -292,7 +296,7 @@ prefixed [Lua] [AutoQTE].
   If ue4ss\UE4SS.log does not exist at all
         UE4SS is not installed or is not loading. Nothing below applies.
 
-  "AutoQTE v1.0.4 loaded (0 blocklist patterns)"
+  "AutoQTE v1.0.5 loaded (0 blocklist patterns)"
         The mod loaded. If this line is missing, it did not.
 
   "hooked ..."  x4

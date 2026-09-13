@@ -1,3 +1,20 @@
+## 1.0.5
+
+Changed
+- The archive now carries the full path from the game folder
+  (`Dawnwalker/Binaries/Win64/ue4ss/Mods/AutoQTE/`) instead of a `Data/` prefix.
+  Extract it into the game folder and it merges into place; a mod manager
+  deploying relative to the game root lands the same files in the same spots.
+  The `Data/` prefix was a mod-manager-only convention that left manual
+  installers digging a folder deeper than every other Dawnwalker Lua mod's
+  instructions told them to.
+- `README.txt` and `LICENSE.txt` moved inside the mod folder, so extracting no
+  longer drops loose files in the game directory and deleting the mod folder
+  removes its documentation with it.
+
+Verified by extracting into a game folder holding another mod and a `mods.txt`:
+AutoQTE lands correctly and neither is touched.
+
 ## 1.0.4
 
 Minor documentation adjustments. No code changes: `Scripts/main.lua` is

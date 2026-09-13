@@ -1,5 +1,5 @@
 ================================================================================
-AutoQTE v1.0.6  -  The Blood of Dawnwalker
+AutoQTE v1.0.8  -  The Blood of Dawnwalker
 An UNOFFICIAL fan-made mod. Not affiliated with or endorsed by Rebel Wolves.
 Auto-resolves quick-time prompts in Dialogue Interaction Scenes.
 ================================================================================
@@ -9,15 +9,13 @@ WHAT IT DOES
 The game's quick-time prompts live in a system it calls DIS ("Dialogue
 Interaction Scene") - chopping wood, digging, prying boards, turning a wheel.
 AutoQTE resolves them for you by calling the scene's own CompleteCurrentPrompt()
-- the exact function the game runs when you hit the prompt yourself - and fades
-the prompt ring out so the moment plays through uninterrupted.
+- the exact function the game runs when you hit the prompt yourself - and hides
+the prompt ring so the moment plays through uninterrupted.
 
-NOTHING IS BLOCKED BY DEFAULT, and that is a finding rather than a shortcut.
-A DIS prompt cannot be failed: the engine's scene-end type is CancelledByPlayer,
-CancelledByQuestNode or Completed - there is no Failed - and the interaction type
-is only Press, Hold or Tapping. CompleteCurrentPrompt fires OnPromptSuccess
-unconditionally. Nothing downstream can branch on how you played a prompt, so
-auto-completing a scene reaches exactly the state playing it by hand reaches.
+NOTHING IS BLOCKED BY DEFAULT, because nothing needs to be. A DIS prompt has no
+failure state - the scene-end type is Completed, CancelledByPlayer or
+CancelledByQuestNode - and CompleteCurrentPrompt always reports success, so a
+scene AutoQTE completes reaches the same state as one played by hand.
 
 What auto-completion does take away is the chance to walk away from a scene
 instead of performing it. If you would rather make that choice yourself for the
@@ -31,6 +29,14 @@ A scene the mod cannot positively identify is always left alone, on purpose.
 It is a Lua-only UE4SS mod: one script plus a reference ini and a marker
 file. No DLL, no pak, no assets.
 See CONFLICTS below for exactly what it hooks.
+
+TWO EDITIONS. This is the UE4SS edition, and the recommended one. A separate
+.pak edition (AutoQTE-PAK-<version>.zip) needs no UE4SS: it overrides two
+game assets so that the same CompleteCurrentPrompt runs as soon as a prompt
+starts and the same prompt widget is never drawn. It has no toggle key, no
+diagnose key, no BlockAlso, no ini and no log - all or nothing - and a game
+patch can require it to be rebuilt. Pick it only if you cannot run UE4SS, and
+never install both at once.
 
 
 --------------------------------------------------------------------------------
@@ -66,11 +72,9 @@ the cause, not this mod.
 No other mods are required. AutoQTE uses no shared library and depends on
 nothing but UE4SS itself.
 
-NOTE: the available UE4SS packages for this game are NOT interchangeable. They
-ship different hook settings, and at least one ships a modified UE4SS.dll with
-altered Lua behaviour. Do not merge them - back up and replace wholesale. This
-mod was developed against a settings-only UE4SS 3.x (build 527a483b) with the
-minimal hook set, and it tolerates either DLL variant.
+NOTE: the UE4SS packages available for this game are not interchangeable - they
+ship different hook settings, and one ships a modified UE4SS.dll. Do not merge
+them; back up and replace wholesale. AutoQTE works with either DLL variant.
 
 
 --------------------------------------------------------------------------------
@@ -128,13 +132,13 @@ you did not want, and the mod comes with no warranty - see LICENSE.txt.
 
 If something goes wrong, please report it. The most useful report is:
 
-    - Press F5 while the scene is still on screen. That writes the scene's
+    - Press INS while the scene is still on screen. That writes the scene's
       identity and state to the log.
     - Set Verbose = true in AutoQTE.ini first, so those lines also land in
       AutoQTE.log beside main.lua. Otherwise they only reach UE4SS.log.
     - A save from just before the scene, if you still have one.
 
-The scene identity from F5 is usually enough to find the cause. If a scene
+The scene identity from INS is usually enough to find the cause. If a scene
 misbehaves and you would rather keep playing, BlockAlso takes a piece of that
 identity and leaves that scene to you, or F4 turns the mod off entirely.
 
@@ -147,15 +151,15 @@ CONTROLS
   F4    toggle the mod on/off. Works mid-scene in both directions: turn
         it off and the current prompt comes back for you to play, turn
         it on again and the next prompt in that same scene is resolved.
-  F5    print diagnostics for the current scene
+  INS   print diagnostics for the current scene
 
 Set in AutoQTE.ini (copy AutoQTE.defaults.ini beside main.lua):
 
     ToggleKey = F4
-    DiagnoseKey = F5
+    DiagnoseKey = INS
 
 Any key name UE4SS knows, written without quotes; an empty value disables that
-bind. F4 and F5 were chosen because
+bind. F4 and INS were chosen because
 nothing else in this game's mod ecosystem was found using them. Claimed by other
 mods for this game: F1, F2, F3 (another mod), F6 (another mod, another mod), F7/F8/F9/F10 (another mod).
 
@@ -178,20 +182,18 @@ If neither file exists the built-in defaults are used.
 Settings are read once at startup. Restart the game after editing.
 
   Enabled              Master switch. The toggle key flips it in game.
-  HidePrompt           Fade the prompt ring while a scene is skipped.
+  HidePrompt           Hide the prompt ring while a scene is skipped.
   ToggleKey            Default "F4". Empty binds nothing.
-  DiagnoseKey          Default "F5". Empty binds nothing.
+  DiagnoseKey          Default "INS". Empty binds nothing. The mod only
+                       checks keys other UE4SS mods took, not the game's own,
+                       and a UE4SS key fires alongside a game binding - which
+                       is why this is not F5: the game's quicksave is.
   BlockAlso            Extra scenes to leave alone, comma separated.
   Verbose              Also write AutoQTE.log beside main.lua.
   LogEveryCompletion   One line per prompt. Noisy; for diagnosing one scene.
 
-Those are all of them. main.lua carries the same values as built-in defaults,
-but you never need to edit it - the ini overrides them.
-
-NOTE: your settings live in AutoQTE.ini, which is NOT in the archive and is
-never overwritten. An update replaces main.lua and AutoQTE.defaults.ini only.
-Update by overwriting the folder in place - do not delete it first, or you will
-delete your own AutoQTE.ini along with it.
+Those are all of them. Update by overwriting the folder in place - do not delete
+it first, or you delete your own AutoQTE.ini with it.
 
 
 --------------------------------------------------------------------------------
@@ -202,16 +204,14 @@ It never writes to your saves, settings, stats, inventory, quest flags, combat
 state, or player state. It simulates no keypresses. It ships no assets and
 touches no .pak.
 
-Everything it writes is runtime scene state that the game itself clears when the
-scene ends, and the values it writes are identical to the ones the game writes
-when you complete a prompt normally.
+Everything it writes is runtime scene state that the game clears when the scene
+ends, and the values are the ones the game writes when you complete a prompt
+yourself.
 
 Most DIS scenes are chores: the outcome is fixed by the sequence reaching its
-end, so resolving a prompt early only changes how long you wait. A few are not.
-Some prompts are an act with a consequence, and those are exactly what the
-optional BlockAlso list is for - see SETTINGS. Either way AutoQTE writes
-only the values the game itself writes when you complete a prompt by hand, and
-it cannot corrupt a save.
+end, so resolving a prompt early only changes how long you wait. A few are an
+act with a consequence, and those are what the optional BlockAlso list is for -
+see SETTINGS.
 
 Achievements are not affected. Removing the mod mid-playthrough is safe: it
 writes nothing that persists into a save, so there is nothing to undo. Even so,
@@ -236,29 +236,31 @@ hook and what they replace. AutoQTE declares all of it:
       /Script/DogwoodWorld.InteractiveSceneObject:OnCancelledInteractiveSceneNotification
       /Script/DogwoodWorld.DISLevelSequenceDirector:TriggerDISInteraction
 
-  Keys:   F4, F5 - yielded to whoever registered them first.
+  Keys:   F4, INS - yielded to whoever registered them first.
 
   Assets: NONE. AutoQTE writes no .pak, .utoc or .ucas, replaces no asset,
           and adds no file inside the game's content. It therefore cannot
           conflict with any asset-replacing mod, at any load order.
 
   Widget: one, and only while a scene is being skipped. With
-          HidePrompt = true (the default) AutoQTE sets RenderOpacity on
-          the live WBP_DIS_Prompt_New_C prompt widget and puts it back when
-          the scene ends. It only ever undoes its OWN write - if another mod
-          changed that value in the meantime, that mod's value stands.
+          HidePrompt = true (the default) AutoQTE sets Visibility to
+          Collapsed on the live WBP_DIS_Prompt_New_C prompt widget and puts
+          it back when the scene ends. It only ever undoes its OWN write - if
+          another mod changed that value in the meantime, that mod's value
+          stands - and it reads every write back rather than trusting the
+          call.
 
-No other mod found for this game hooks those four functions, and AutoQTE
-deliberately stays off /Script/Engine.PlayerController:ClientRestart, which
-several mods for this game do share. It has no load-order requirement.
+No other mod found for this game hooks those four functions, and AutoQTE stays
+off /Script/Engine.PlayerController:ClientRestart, which several mods for this
+game share. It has no load-order requirement.
 
 HUD mods that manage the DIS prompt widget:
 
   Dawnwalker another mod lists WBP_DIS_Prompt_New_C in its own fade
-  watch list and writes RenderOpacity to it, so both mods end up managing one
-  widget. AutoQTE will not overwrite a value another mod set, which makes the
-  usual outcome harmless. If the prompt ever ends up faded when it should not
-  be, set HidePrompt = false in AutoQTE.ini, or drop WBP_DIS_Prompt_New_C from
+  watch list and writes RenderOpacity to it - a different property from the
+  Visibility AutoQTE uses, so the two no longer contend for one value. If the
+  prompt ever ends up hidden or faded when it should not be, set
+  HidePrompt = false in AutoQTE.ini, or drop WBP_DIS_Prompt_New_C from
   another mod' watch list. Either one settles it.
 
   another mod uses the same capture-and-restore idiom on HUD widgets but
@@ -302,16 +304,13 @@ KNOWN ISSUES THAT ARE NOT THIS MOD
 GAME VERSION
 --------------------------------------------------------------------------------
 
-Verified on:  Steam build 25232147, the 12 September 2026 patch (UE 5.5.4)
-              dw1-pc-258042-shipping-patch2-all-CL-258042  (UE 5.5.4)
-              dw1-pc-256181-shipping-patch2-all-CL-256181  (UE 5.5.4)
+Verified on:  Steam build 25232147, the 12 September 2026 patch (UE 5.5.4).
+Earlier builds of the same patch line also worked.
 
-CL-257186 was also used during development but is no longer available here.
-
-The mod identifies everything by NAME, not by memory address, so it is not tied
+The mod identifies everything by name, not by memory address, so it is not tied
 to a storefront and should carry across builds. If a game update renames the
-classes or properties it reads, it stops working SAFELY: it fails closed,
-prompts revert to being played by hand, and nothing is auto-resolved.
+classes or properties it reads, it fails closed: prompts revert to being played
+by hand and nothing is auto-resolved.
 
 The blocklist matches asset path substrings, so renamed scene assets would stop
 matching. That is why the scene identity is written to the log on every scene.
@@ -327,7 +326,7 @@ prefixed [Lua] [AutoQTE].
   If ue4ss\UE4SS.log does not exist at all
         UE4SS is not installed or is not loading. Nothing below applies.
 
-  "AutoQTE v1.0.6 loaded (0 blocklist patterns)"
+  "AutoQTE v1.0.8 loaded (0 blocklist patterns)"
         The mod loaded. If this line is missing, it did not.
 
   "hooked ..."  x4

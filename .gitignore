@@ -32,3 +32,14 @@ Desktop.ini
 
 # Internal release review, not part of the release
 release_review.md
+
+# Never commit the game AES key
+.aes-key
+aes.txt
+
+# .NET build output for tools/pak/patcher
+[Bb]in/
+[Oo]bj/
+
+# Third-party proposed patches kept for review; never release content
+/patch/

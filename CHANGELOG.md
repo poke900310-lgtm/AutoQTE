@@ -1,3 +1,85 @@
+## 1.0.8
+
+Changed
+- The prompt is hidden by setting the widget's `Visibility` to `Collapsed`
+  instead of writing `RenderOpacity = 0`. Same result on screen; it is the same
+  property the .pak edition defaults in the asset, and it no longer contends
+  with HUD mods that fade widgets by opacity.
+- The diagnose key moves from F5 to INS. The mod's key check only sees other
+  UE4SS mods, and a UE4SS key fires alongside a game binding; F5 is the game's
+  quicksave, so every diagnose also quicksaved. Set `DiagnoseKey = F5` to keep
+  the old key.
+
+Hardening, each with a regression test and a mutation anchor
+- Every `SetVisibility` is read back. A call that returns but does nothing no
+  longer drops a widget still owed a restore. A read-back that is unreadable,
+  or not a number, is treated as no evidence rather than as a failed write.
+- F4 reports why it cannot enable the mod when the DIS hooks failed to
+  register, instead of announcing `ENABLED`.
+- Hook callbacks run under `xpcall`. An error is logged with its traceback and
+  contained; the scene is kept and the mod stays on.
+- A scene-start notification whose context cannot be read releases the
+  tracked scene.
+- A second playback-start for the same actor no longer announces `skipped:`
+  twice, and the log-file write is guarded like every other I/O call.
+
+Documentation
+- `AutoQTE.defaults.ini` notes that several `BlockAlso` lines accumulate while
+  a single value must not wrap.
+- `BLOCKABLE-SCENES.md` lists all 59 blockable scenes, derived from the game's
+  containers by asset class, and shows what the reference set covers.
+
+Suite 65 -> 92 assertions, mutation battery 25 -> 35, 0 survivors.
+
+## .pak edition 1.0.1
+
+A second edition that needs no UE4SS, versioned separately from the Lua mod.
+It overrides two cooked assets: `BP_DIS` has its `ReceiveTick` event pointed
+at the ubergraph entry of `CompleteCurrentPrompt` (two bytes of `.uexp`), and
+`WBP_DIS_Prompt_New` has its default `Visibility` set to `Collapsed`. Both
+are needed: completing a prompt does not take its widget down.
+
+No toggle key, no diagnose key, no blocklist, no ini, no log. It does not
+touch combat.
+
+1.0.1 is the container as `tools/pak/build_pak.py` reproduces it; the
+payload is byte-identical to 1.0.0, whose package headers came from an
+intermediate build the pipeline no longer produces. The build derives both
+bytecode offsets by name, so a game patch that recompiles `BP_DIS` needs a
+rebuild rather than a new analysis; it never echoes the AES key, refuses to
+run over a non-stock container, and verifies that the only bytes changed are
+the offset literal itself. See `tools/pak/README.md`.
+
+## .pak edition 1.0.0
+
+Initial release. Superseded by 1.0.1 (identical payload).
+
+## 1.0.7
+
+Fixed, from an external review of 1.0.5 whose five findings all reproduced.
+
+- A completion that returned without throwing was taken as success. `call()`
+  returns `(pcall ok, result)` and only the first was read, so an engine function
+  that returns and does nothing was reported as a skip while the prompt stayed
+  live under a hidden widget - the opposite of failing closed. The prompt state
+  is now re-checked afterwards and handed back if it is still pending.
+- A scene whose class we do not recognise returned before the supersede check,
+  leaving the previous scene tracked; a later trigger could then complete a
+  prompt in a scene that had already finished. Superseding now happens first.
+- `hidePrompt` overwrote the latch of a widget whose restore had been refused,
+  stranding it at our own 0.0 with nothing remembering it - the session-long
+  invisible prompt that the retention exists to prevent. It now declines to hide
+  a different widget while a restore is owed.
+- An ini that opened but would not read was silently skipped, which looks
+  identical to having no ini at all while the user's settings quietly do not
+  apply. It now says so.
+- `FindAllOf` was in the mandatory-globals gate but is used only by the F5
+  sweep, so a build missing just that function disabled the whole mod. F5 now
+  degrades on its own.
+
+Suite 54 -> 65 assertions, battery 22 -> 25 mutants, 0 survivors; each fix has
+a test that fails without it.
+
 ## 1.0.6
 
 Added

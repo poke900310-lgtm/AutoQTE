@@ -24,6 +24,13 @@ Tested on The Blood of Dawnwalker, Steam build 25232147 (the 12 September 2026
 patch), with UE4SS v1.2.1-rc6. All four hooks resolve and scenes auto-complete
 on that setup.
 
+**Two editions.** The main file is the UE4SS edition and the recommended one. A
+separate `.pak` edition needs no UE4SS: it overrides two game assets so that
+the same `CompleteCurrentPrompt` runs as soon as a prompt starts and the same
+prompt widget is never drawn. It has no toggle key, no diagnose key, no
+blocklist, no ini and no log, and a game patch can require it to be rebuilt.
+Choose it only if you cannot run UE4SS, and never install both.
+
 ## Installation instructions
 
 **a mod manager** - install the archive; it carries the full path from the game
@@ -60,13 +67,15 @@ shipped: create it, and it will survive mod updates, unlike
 Enabled = true
 HidePrompt = true
 ToggleKey = F4
-DiagnoseKey = F5
+DiagnoseKey = INS
 BlockAlso =
 Verbose = false
 ```
 
 Key names are UE4SS names: `F4`, `INS`, `HOME`, `NUM_FIVE`. Leave a key empty to
-not bind it. Settings load at startup, so restart the game after editing.
+not bind it. Settings load at startup, so restart the game after editing. A
+UE4SS key fires alongside the game's own binding for that key, which is why
+diagnose is on INS and not F5: the game's quicksave is on F5.
 
 **Uninstallation** - delete the `AutoQTE` folder. Nothing else is touched.
 
@@ -76,14 +85,17 @@ not bind it. Settings load at startup, so restart the game after editing.
 - Hides the prompt ring while it works, and restores it afterwards
 - **F4** toggles the mod on and off at any time, even mid-scene. Switch it off
   and the live prompt comes back for you to play
-- **F5** writes the current scene's state to the log, for reporting a scene that
+- **INS** writes the current scene's state to the log, for reporting a scene that
   misbehaves
-- Optional blocklist if you would rather perform certain scenes yourself
+- Optional blocklist if you would rather perform certain scenes yourself; the
+  full list of all 59 blockable scenes is in the GitHub repo
+  (`BLOCKABLE-SCENES.md`)
 - Empty blocklist by default - nothing is blocked until you say so
 
 ## Requirements
 
-UE4SS. Any working install will do.
+UE4SS, for this edition. Any working install will do. The `.pak` edition
+requires nothing.
 
 **Compatibility** - four native hooks and two keybinds. No `.pak`, no assets, no
 `mods.txt` entry, and it does not touch `dwmapi.dll` or `UE4SS-settings.ini`, so
@@ -92,7 +104,7 @@ it will not fight your UE4SS install or any other package over those files.
 It only conflicts with another mod that drives the same DIS prompts. HUD and UI
 mods are fine; if one of them fades the prompt ring, set `HidePrompt = false`.
 
-If F4 or F5 are already taken by another mod, AutoQTE says so in the log and does
+If F4 or INS are already taken by another mod, AutoQTE says so in the log and does
 not bind - change `ToggleKey` in the ini.
 
 ## Disclaimer and reporting bugs
@@ -110,13 +122,13 @@ want, and the mod comes with no warranty - see `LICENSE.txt`.
 
 If something goes wrong, please report it. The most useful report is:
 
-- Press **F5** while the scene is still on screen. That writes the scene's
+- Press **INS** while the scene is still on screen. That writes the scene's
   identity and state to the log.
 - Set `Verbose = true` in `AutoQTE.ini` first, so those lines also land in
   `AutoQTE.log` beside `main.lua`. Otherwise they only reach `UE4SS.log`.
 - A save from just before the scene, if you still have one.
 
-The scene identity from F5 is usually enough to find the cause. If a scene
+The scene identity from INS is usually enough to find the cause. If a scene
 misbehaves and you'd rather keep playing, `BlockAlso` takes a piece of that
 identity and leaves that scene to you, or F4 turns the mod off entirely.
 

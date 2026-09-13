@@ -3,9 +3,11 @@ r"""Build the release archive in the layout a mod manager's "UE4SS (Lua mods)" t
 
     python tools/build.py            -> dist/AutoQTE-<version>.zip
 
-Data/ is what gets deployed into ue4ss\Mods\; README.txt and LICENSE.txt sit
-at the archive root so they stay out of the game folder. Forward slashes only,
-no directory entries, no stray files.
+The archive carries the full path from the game folder
+(Dawnwalker/Binaries/Win64/ue4ss/Mods/AutoQTE/), so it works both as a drop-in
+extract and as a mod-manager install; README.txt and LICENSE.txt sit inside the
+mod folder so an extract never drops them loose in the game directory. Forward
+slashes only, no directory entries, no stray files.
 """
 import glob
 import hashlib
@@ -82,7 +84,11 @@ def main():
 
     # Only one archive may sit in dist/. Attaching last release's zip to a new
     # tag is a mistake you cannot take back once anyone has downloaded it.
+    # The .pak edition is versioned separately and builds into the same
+    # directory; its archive is not a stale copy of this one.
     for stale_zip in glob.glob(os.path.join(ROOT, "dist", "AutoQTE-*.zip")):
+        if "-PAK-" in os.path.basename(stale_zip):
+            continue
         if os.path.abspath(stale_zip) != os.path.abspath(OUT):
             os.remove(stale_zip)
             print("removed stale %s" % os.path.basename(stale_zip))

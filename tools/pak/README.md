@@ -174,7 +174,7 @@ overrides it at runtime".
 
 ## What the pak edition cannot do
 
-No F4 toggle, no F5 diagnose, no blocklist, no ini, no logging. All of that is
+No F4 toggle, no INS diagnose, no blocklist, no ini, no logging. All of that is
 script behaviour with nowhere to live in an asset override. It is all-or-nothing
 auto-complete, and that is the trade for not needing UE4SS.
 

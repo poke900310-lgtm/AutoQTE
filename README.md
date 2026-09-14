@@ -61,6 +61,7 @@ ToggleKey = F4
 DiagnoseKey = INS
 BlockAlso =
 Verbose = false
+LogEveryCompletion = false
 ```
 
 Key names are UE4SS names (`F4`, `INS`, `HOME`, `NUM_FIVE`); an empty value

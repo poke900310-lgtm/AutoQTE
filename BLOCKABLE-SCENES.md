@@ -110,4 +110,4 @@ line and a wrapped value applies only its first line.
 Longer is safer. `dis_shelf` also matches `q302_dis_shelf` and `q303_dis_shelf`;
 `sq711_chopping_wood` matches all four of that quest's chopping scenes. If you
 mean one scene, use its whole file name. If you mean the family, the shared
-stem is the point. Press F5 during a scene to see its exact identity.
+stem is the point. Press INS during a scene to see its exact identity.

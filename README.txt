@@ -1,5 +1,5 @@
 ================================================================================
-AutoQTE v1.0.8  -  The Blood of Dawnwalker
+AutoQTE v1.0.9  -  The Blood of Dawnwalker
 An UNOFFICIAL fan-made mod. Not affiliated with or endorsed by Rebel Wolves.
 Auto-resolves quick-time prompts in Dialogue Interaction Scenes.
 ================================================================================
@@ -262,9 +262,6 @@ HUD mods that manage the DIS prompt widget:
   HidePrompt = false in AutoQTE.ini, or drop WBP_DIS_Prompt_New_C from
   that mod's watch list. Either one settles it.
 
-  another mod uses the same capture-and-restore idiom on HUD widgets but
-  does not currently target the DIS prompt.
-
 Prerequisite conflicts, which are NOT mod conflicts:
 
   Two different Dawnwalker UE4SS packages will fight over dwmapi.dll,
@@ -273,7 +270,7 @@ Prerequisite conflicts, which are NOT mod conflicts:
 
 Input remaps do not matter. AutoQTE never simulates a keypress - it calls the
 scene's own CompleteCurrentPrompt - so controller vs keyboard, and any
-Enhanced Input remap such as another mod & Remap, are irrelevant to it.
+Enhanced Input remap, are irrelevant to it.
 
 If all four hooks cannot be registered, the ones that succeeded are unregistered
 again rather than being left attached to functions other mods may hook later.
@@ -325,7 +322,7 @@ prefixed [Lua] [AutoQTE].
   If ue4ss\UE4SS.log does not exist at all
         UE4SS is not installed or is not loading. Nothing below applies.
 
-  "AutoQTE v1.0.8 loaded (0 blocklist patterns)"
+  "AutoQTE v1.0.9 loaded (0 blocklist patterns)"
         The mod loaded. If this line is missing, it did not.
 
   "hooked ..."  x4

@@ -1,3 +1,17 @@
+## 1.0.9
+
+Fixed
+- Crash safety. The mod no longer holds the interactive-scene actor or the
+  prompt widget as a live handle between callbacks. On this engine even a
+  validity check reads through the object's own pointer, so checking a scene or
+  widget the game freed without a completion/cancellation notice - a save loaded
+  or the level streamed out mid-scene - could itself fault, a native crash a
+  `pcall` cannot catch. Both are now tracked by identity (address and name) and
+  re-derived fresh from the live object list on use, so a stale handle is never
+  dereferenced. The regression suite was tightened to fault on a freed handle,
+  so this class is now caught by a test.
+- Keybind callbacks now carry the same error guard the scene hooks already use.
+
 ## 1.0.8
 
 Changed

@@ -11,7 +11,7 @@ sees exactly what it expects.
 
 - **Nexus:** <https://www.nexusmods.com/thebloodofdawnwalker/mods/456>
 - **Releases:** <https://github.com/poke900310-lgtm/AutoQTE/releases/latest>
-- **Version:** 1.0.8 (UE4SS edition) · 1.0.1 (.pak edition)
+- **Version:** 1.0.9 (UE4SS edition) · 1.0.1 (.pak edition)
 - **Game:** The Blood of Dawnwalker, UE 5.5.4, verified on Steam build `25232147`
 
 ## Editions
@@ -145,9 +145,11 @@ read back, and a read-back that is unreadable or not a number is treated as no
 evidence rather than as a failure.
 
 Every engine call is wrapped in `pcall`, because UE4SS returns truthy phantom
-userdata for members that do not exist; only scalar reads are trusted. Live
-objects are compared by `GetAddress()` — the prompt widget additionally by its
-full name — never by Lua `==`.
+userdata for members that do not exist; only scalar reads are trusted. Neither the
+scene actor nor the prompt widget is held as a live handle between callbacks — each
+is remembered by identity (`GetAddress()` plus full name) and re-derived on use,
+from the actor the hook hands over or from `FindAllOf` (which returns only live
+objects), so a stale handle is never dereferenced; nothing is compared by Lua `==`.
 If `CompleteCurrentPrompt` is refused or returns without clearing the prompt,
 the widget is restored and the scene is handed back to the player.
 

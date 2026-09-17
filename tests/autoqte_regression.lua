@@ -42,6 +42,7 @@ end
 
 local PHANTOM = setmetatable({}, {__tostring = function() return "<phantom>" end})
 local nextAddr = 0x1000
+local tracked = {}   -- every object mk() creates, so FindAllOf can re-derive live ones
 
 local function mk(spec)
   spec = spec or {}
@@ -51,7 +52,9 @@ local function mk(spec)
               vis = spec.vis or 0, completed = 0, freed = false,
               onComplete = spec.onComplete }
   local M = {}
-  M.IsValid  = function(self) return not self.freed end
+  M.IsValid  = function(self)
+      if self.freed then faults = faults + 1; error("ACCESS VIOLATION: IsValid on freed "..self.name) end
+      return true end
   M.GetAddress = function(self) return self.__addr end
   M.GetFullName = function(self)
       if self.freed then faults = faults + 1; error("ACCESS VIOLATION: GetFullName on freed "..self.name) end
@@ -83,6 +86,7 @@ local function mk(spec)
         local cb = rawget(self, "onComplete")
         if cb then cb(self) end end
   end
+  tracked[#tracked + 1] = o
   return setmetatable(o, {__index = function(t, k)
       if M[k] then return M[k] end
       local p = rawget(t, "props")
@@ -109,7 +113,14 @@ Key = setmetatable({}, {__index = function(t, k)
     -- "not a key name UE4SS knows", which bind() must handle.
     if type(k) ~= "string" or not (k:match("^F%d+$") or k == "INS" or k == "HOME" or k == "END") then return nil end
     kc = kc + 1; rawset(t, k, kc); keyname[kc] = k; return kc end})
-FindAllOf = function() return {} end
+FindAllOf = function(cls)
+    -- the engine returns live instances of the class; a freed object is gone and
+    -- must NOT come back, which is exactly what makes re-derivation by identity safe
+    local r = {}
+    for _, o in ipairs(tracked) do
+        if not o.freed and o.cls == cls then r[#r + 1] = o end
+    end
+    return r end
 
 local START   = "/Script/DogwoodWorld.InteractiveSceneObject:OnInteractiveScenePlaybackStarted"
 local DONE    = "/Script/DogwoodWorld.InteractiveSceneObject:OnCompletedInteractiveSceneNotification"
@@ -118,7 +129,7 @@ local TRIGGER = "/Script/DogwoodWorld.DISLevelSequenceDirector:TriggerDISInterac
 local SEQNAME = "InteractiveSceneLevelSequence /Game/Q/DialogueInteractions/WoodChopping/LS_DIS_WoodChopping_Long"
 
 local function fresh()
-  out, hooks, binds, faults = {}, {}, {}, 0
+  out, hooks, binds, faults, tracked = {}, {}, {}, 0, {}
   FAIL_VISIBILITY = false
   REFUSE_WIDGET = nil
   NOOP_VISIBILITY = false
@@ -252,6 +263,7 @@ do
   check("trigger on a freed actor completes nothing more", a.completed == before,
         "completed=" .. a.completed)
   check("the scene is disowned", logged("actor invalid") ~= nil)
+  check("no freed handle was dereferenced", faults == 0, "native faults=" .. faults)
 end
 
 io.write("== V8  the prompt widget is never left hidden\n")
@@ -529,6 +541,16 @@ do
   check("diagnose prints the scene identity", logged("scene: ") ~= nil)
   check("and it is the level-sequence half, not just the actor",
         logged("ls_dis_woodchopping_long") ~= nil)
+end
+
+io.write("== V16b  isAlive rejects a phantom (absent member): diagnose reports <none>\n")
+do
+  INI = nil; fresh()
+  local a = scene()
+  a.props["Action Prompt"] = nil   -- no prompt widget: getObject must reject the phantom UE4SS returns for an absent member
+  hooks[START](a)
+  binds.INS()
+  check("an absent Action Prompt reports <none>, not a phantom widget", logged("<none>") ~= nil)
 end
 
 

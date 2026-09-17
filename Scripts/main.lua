@@ -1,4 +1,4 @@
-local VERSION = "1.0.8"
+local VERSION = "1.0.9"
 local Config = {
     Enabled = true,
     DIS = {
@@ -139,10 +139,6 @@ local function fullName(obj)
     if ok and type(n) == "string" then return n end
     return ""
 end
-local function sameActor(a, b)
-    local ok, eq = pcall(function() return a:GetAddress() == b:GetAddress() end)
-    return ok and eq
-end
 local function addressOf(obj)
     local ok, a = pcall(function() return obj:GetAddress() end)
     if ok and type(a) == "number" then return a end
@@ -153,14 +149,15 @@ local function classOf(obj)
     if ok and type(n) == "string" then return n end
     return ""
 end
-local scene          = nil
+local sceneAddr      = nil
+local sceneName      = nil
 local seenClass      = {}
 local announced      = false
 local sceneId        = nil
-local hiddenWidget   = nil
 local hiddenName     = nil
 local hiddenAddr     = nil
 local hiddenVis      = nil
+local hiddenClass    = nil
 local endScene
 local function sceneIdentity(actor)
     local ok, seq = call(actor, "GetInteractiveSceneLevelSequence")
@@ -198,33 +195,59 @@ local function setVisibility(w, value)
     local back = getScalar(w, W_VISIBILITY)
     return type(back) ~= "number" or back == value
 end
-local function restorePrompt()
+local function findByIdentity(cls, addr, name)
+    if not (addr and name) then return nil end
+    local finder = rawget(_G, "FindAllOf")
+    if not finder then return nil end
+    local ok, objs = pcall(finder, cls)
+    if not (ok and type(objs) == "table") then return nil end
+    for _, o in pairs(objs) do
+        if isAlive(o) and addressOf(o) == addr and fullName(o) == name then
+            return o
+        end
+    end
+    return nil
+end
+local function liveScene()
+    return findByIdentity(DIS_CLASS, sceneAddr, sceneName)
+end
+local function liveWidget(actor)
+    if not hiddenAddr then return nil end
+    if actor then
+        local w = getObject(actor, P_WIDGET)
+        if w and addressOf(w) == hiddenAddr and fullName(w) == hiddenName then
+            return w
+        end
+    end
+    return findByIdentity(hiddenClass, hiddenAddr, hiddenName)
+end
+local function restorePrompt(actor)
     local restored, prev = true, hiddenVis
-    if hiddenWidget and isAlive(hiddenWidget)
-       and addressOf(hiddenWidget) == hiddenAddr and fullName(hiddenWidget) == hiddenName then
-        local cur = getScalar(hiddenWidget, W_VISIBILITY)
+    local w = liveWidget(actor)
+    if w then
+        local cur = getScalar(w, W_VISIBILITY)
         if type(cur) ~= "number" or cur == VIS_COLLAPSED then
-            restored = setVisibility(hiddenWidget, hiddenVis or VIS_VISIBLE)
+            restored = setVisibility(w, hiddenVis or VIS_VISIBLE)
         end
     end
     if restored then
-        hiddenWidget, hiddenName, hiddenAddr, hiddenVis = nil, nil, nil, nil
+        hiddenName, hiddenAddr, hiddenVis, hiddenClass = nil, nil, nil, nil
     end
     return restored, prev
 end
 local function hidePrompt(actor)
     if not Config.DIS.HidePrompt then return end
     local w = getObject(actor, P_WIDGET)
-    local restored, prev = restorePrompt()
+    local restored, prev = restorePrompt(actor)
     if not w then return end
     local nm, ad = fullName(w), addressOf(w)
-    if not restored and not (hiddenWidget and ad == hiddenAddr and nm == hiddenName) then
+    if not restored and not (hiddenAddr and ad == hiddenAddr and nm == hiddenName) then
         return
     end
     local was = getScalar(w, W_VISIBILITY)
     if not restored and was == VIS_COLLAPSED then was = prev end
     if setVisibility(w, VIS_COLLAPSED) then
-        hiddenWidget, hiddenName, hiddenAddr = w, nm, ad
+        hiddenName, hiddenAddr, hiddenClass = nm, ad, classOf(w)
         hiddenVis = type(was) == "number" and was or VIS_VISIBLE
     end
 end
@@ -242,11 +265,11 @@ local function resolvePrompt(actor)
     hidePrompt(actor)
     if not (call(actor, "CompleteCurrentPrompt")) then
         log("CompleteCurrentPrompt was refused - left to the player: %s", id or fullName(actor))
-        endScene("completion refused")
+        endScene("completion refused", actor)
         return
     end
     if promptPending(actor) then
-        restorePrompt()
+        restorePrompt(actor)
         log("CompleteCurrentPrompt returned but the prompt is still pending - left to the player: %s",
             id or fullName(actor))
         return
@@ -261,7 +284,8 @@ local function beginScene(actor, reason)
     if not Config.DIS.Enabled then return end
     if not isAlive(actor) then return end
     if fullName(actor):find("Default__", 1, true) then return end
-    if not sameActor(scene, actor) then endScene("superseded") end
+    local ad, nm = addressOf(actor), fullName(actor)
+    if not (sceneAddr and ad == sceneAddr and nm == sceneName) then endScene("superseded", actor) end
     local cls = classOf(actor)
     if cls ~= DIS_CLASS then
         if cls ~= "" and not seenClass[cls] then
@@ -273,19 +297,19 @@ local function beginScene(actor, reason)
     local id = sceneIdentity(actor)
     local blocked = isBlocked(id)
     if blocked then
-        endScene("blocked")
+        endScene("blocked", actor)
         log("BLOCKED (%s) - left to the player: %s", blocked, id or fullName(actor))
         return
     end
-    scene = actor
-    sceneId = id
+    sceneAddr, sceneName, sceneId = ad, nm, id
     log("scene started (%s): %s", reason, id)
     resolvePrompt(actor)
 end
-endScene = function(reason)
-    restorePrompt()
-    if not scene then return end
-    scene = nil
+endScene = function(reason, actor)
+    restorePrompt(actor or liveScene())
+    if not sceneAddr then return end
+    sceneAddr = nil
+    sceneName = nil
     sceneId = nil
     announced = false
     log("scene ended (%s) - dormant", reason)
@@ -337,29 +361,34 @@ if Config.DIS.Enabled then
         local a = contextActor(Context)
         if a then
             beginScene(a, "playback started")
-        elseif scene then
+        elseif sceneAddr then
             endScene("scene-start context unreadable")
         end
     end, "OnInteractiveScenePlaybackStarted") and ok
     ok = hook(HOOK_DONE, function(Context)
         local a = contextActor(Context)
-        if sameActor(a, scene) then endScene("completed") end
+        if a and sceneAddr and addressOf(a) == sceneAddr and fullName(a) == sceneName then
+            endScene("completed", a)
+        end
     end, "OnCompletedInteractiveSceneNotification") and ok
     ok = hook(HOOK_CANCEL, function(Context)
         local a = contextActor(Context)
-        if sameActor(a, scene) then endScene("cancelled") end
+        if a and sceneAddr and addressOf(a) == sceneAddr and fullName(a) == sceneName then
+            endScene("cancelled", a)
+        end
     end, "OnCancelledInteractiveSceneNotification") and ok
     ok = hook(HOOK_PROMPT, function()
-        if not scene then log("trigger fired but no scene tracked"); return end
-        if not isAlive(scene) or classOf(scene) ~= DIS_CLASS then endScene("actor invalid"); return end
-        if sceneIdentity(scene) ~= sceneId then endScene("actor is no longer that scene"); return end
+        if not sceneAddr then log("trigger fired but no scene tracked"); return end
+        local a = liveScene()
+        if not a or classOf(a) ~= DIS_CLASS then endScene("actor invalid"); return end
+        if sceneIdentity(a) ~= sceneId then endScene("actor is no longer that scene"); return end
         if Config.LogEveryCompletion then
-            local w = getObject(scene, P_WIDGET)
+            local w = getObject(a, P_WIDGET)
             log("trigger: IsPaused=%s widget.IsPromptActive=%s",
-                tostring(getScalar(scene, P_PAUSED)),
+                tostring(getScalar(a, P_PAUSED)),
                 tostring(w and getScalar(w, W_ACTIVE) or nil))
         end
-        resolvePrompt(scene)
+        resolvePrompt(a)
     end, "TriggerDISInteraction") and ok
     if not ok then
         unhookAll()
@@ -373,6 +402,11 @@ end
 local function bind(name, fn)
     if type(name) ~= "string" or name == "" then return end
     name = name:upper()
+    local guarded = function(...)
+        local okc, err = xpcall(fn, debug.traceback, ...)
+        if okc then return end
+        pcall(log, "%s keybind raised an error: %s", name, tostring(err))
+    end
     local ok, key = pcall(function() return Key[name] end)
     if not (ok and type(key) == "number") then
         log("%s is not a key name UE4SS knows - not binding", name)
@@ -387,7 +421,7 @@ local function bind(name, fn)
         log("%s is already claimed by another mod - not binding; change it in AutoQTE.ini", name)
         return
     end
-    if not pcall(RegisterKeyBind, key, {}, fn) then
+    if not pcall(RegisterKeyBind, key, {}, guarded) then
         log("%s could not be bound on this UE4SS build", name)
     end
 end
@@ -399,13 +433,14 @@ bind(Config.Keys.Toggle, function()
             return
         end
         Config.Enabled = not Config.Enabled
-        if not Config.Enabled then restorePrompt() end
+        if not Config.Enabled then restorePrompt(liveScene()) end
         log("%s", Config.Enabled and ">>> AutoQTE ENABLED" or "<<< AutoQTE DISABLED")
     end)
 end)
 bind(Config.Keys.Diagnose, function()
     inGame(function()
-        if scene and isAlive(scene) then diagnose(scene); return end
+        local a = liveScene()
+        if a then diagnose(a); return end
         local finder = rawget(_G, "FindAllOf")
         local ok, actors = false, nil
         if finder then ok, actors = pcall(finder, DIS_CLASS)

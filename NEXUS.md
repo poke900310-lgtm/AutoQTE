@@ -20,9 +20,11 @@ especially: how long you hold decides whether the victim lives or dies, that set
 a persistent fact tag, and quest conditions read it. That is a story choice, not
 a chore, so the mod stays out of it.
 
-Tested on The Blood of Dawnwalker, Steam build 25232147 (the 12 September 2026
-patch), with UE4SS v1.2.1-rc6. All four hooks resolve and scenes auto-complete
-on that setup.
+Tested on The Blood of Dawnwalker 1.1, Steam build 26379537, with UE4SS for
+Dawnwalker v1.2.1-rc6. All four hooks resolve and scenes auto-complete on that
+setup. No update was needed for 1.1: version 1.0.9 works as it is, and so does
+the .pak edition 1.0.1, because the two assets it overrides are unchanged in
+that patch.
 
 **Two editions.** The main file is the UE4SS edition and the recommended one. A
 separate `.pak` edition needs no UE4SS: it overrides two game assets so that

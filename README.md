@@ -12,7 +12,7 @@ sees exactly what it expects.
 - **Nexus:** <https://www.nexusmods.com/thebloodofdawnwalker/mods/456>
 - **Releases:** <https://github.com/poke900310-lgtm/AutoQTE/releases/latest>
 - **Version:** 1.0.9 (UE4SS edition) · 1.0.1 (.pak edition)
-- **Game:** The Blood of Dawnwalker, UE 5.5.4, verified on Steam build `25232147`
+- **Game:** The Blood of Dawnwalker, UE 5.5.4, verified on Steam builds `25232147` and `26379537` (game version 1.1)
 
 ## Editions
 
